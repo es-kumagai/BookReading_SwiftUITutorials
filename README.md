@@ -16,4 +16,4 @@
 ## リンク
 
 - [開催履歴](https://www.notion.so/SwiftUI-Tutorials-265da80f2c3b80a5823dc19b05440b0e)
-- [再生リスト](https://www.youtube.com/playlist?list=PLYDv1MOWNfiycuOCoXN3rjTSRTeY3EejU)
+- [YouTube Live 再生リスト](https://www.youtube.com/playlist?list=PLYDv1MOWNfiycuOCoXN3rjTSRTeY3EejU)
