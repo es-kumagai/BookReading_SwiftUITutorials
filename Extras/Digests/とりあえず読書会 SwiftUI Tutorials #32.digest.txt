@@ -1,0 +1,11 @@
+■ ダイジェスト
+
+SwiftUI Tutorials を読み進めながら、Landmarks の iOS 実装を活かして macOS／watchOS に対応させるセクションを実装して学習しました。対象は セクション 3（Row ビューの更新）と セクション 4（リストビューの更新）です。以下の技術的な変更点に具体的に着目しています。
+- `LandmarkList` に `minWidth` を設定して macOS のウィンドウリサイズに対応。最終的に `#if os(macOS)` で限定適用。
+- `LandmarkRow` の見た目調整: 画像に `cornerRadius`、テキストを `VStack(alignment: .leading)` で構成し、`Text(landmark.name).bold()`、`Text(landmark.park).font(.caption).foregroundStyle(.secondary)`、行全体に `padding(.vertical)` を付与。
+- watchOS 対応の最適化: 行の情報量を抑えるため、2 行目のテキストを `#if !os(watchOS)` で除外。`List`／`Row` のメンバーシップ整理やファイル分割を試行。
+- フィルター UI の移設（iOS／macOS）: `toolbar` に `ToolbarItem` と `Menu` を追加し、`Label("Filter", systemImage: "line.horizontal.3")` の中に `Toggle("Favorites Only", isOn: ...)` を配置。リスト上部のトグルは撤去。
+- プロファイル表示の共通化と差分処理: 状態 `showingProfile` を渡し、iOS は `ProfileHost`、macOS は `EditMode` 非対応を踏まえて `ProfileSummary` を表示。閉じる操作は `Button { showingProfile = false }` とし、`Image(systemName: "xmark")`、`buttonStyle(.plain)`、`HStack`／`Spacer`／`padding` で簡易レイアウト。
+- 共有コンポーネントの対象 OS 拡張: `HikeBadge`／`Badge`／`BadgeSymbol`／`HikeView`／`HikeGraph`／`CategoryItem`／`FavoriteButton` を iOS と macOS で利用可能にし、アニメーションやトランジション（`AnyTransition.moveAndFade` など）も両 OS で有効化。`ButtonStyle` まわりは `#if os(iOS) || os(macOS)` などで条件整理。
+
+本動画は、チュートリアルを読み進めながら、共有コードを保ちつつ各 OS の見た目・振る舞いを整える手順を確認していく内容です。次回はフィルターカテゴリ追加の続きに進みます。

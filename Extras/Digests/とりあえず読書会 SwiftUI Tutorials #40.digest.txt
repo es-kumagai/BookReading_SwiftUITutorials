@@ -1,0 +1,34 @@
+■ ダイジェスト
+
+本動画は Apple の SwiftUI Tutorials を読み進める様子の記録です。SwiftUI 2.0 の仕上げとして、既存コードを全体確認しながら小さなリファクタリングや検証を行い、読み進めながら学んだポイントを整理しています（完成した技術解説ではありません）。
+
+今回具体的に着目した主な技術的トピック
+- コード全体の見直しと小改修
+  - `compactMap` の可読性と使用箇所の確認
+  - クロスプラットフォーム前提のコード整理方針の再確認
+- モデルとプロトコル準拠の整理
+  - `Category` を `enum`（`String` の `rawValue`）として設計し、`Sendable`／`Codable`／`CaseIterable`／`CustomStringConvertible`／`Identifiable` の適用可否を点検。`Identifiable` は用途次第で削除も検討
+  - `Hike`／`Landmark` の確認と、`typealias Observations = [Observation]` による読みやすさ向上
+- フォーマッタと Swift Concurrency
+  - `LengthFormatter`（`Formatter`／`NSObject` 系）の取り扱いを検証。`@MainActor` 付与の是非、`Swift Strict Concurrency Checking` と `Default Actor Isolation` の設定差（iOS と macOS）をビルドで確認
+  - 共有フォーマッタの扱いとして、`@MainActor` で守る／ロックで排他／都度生成／`nonisolated(unsafe)` の選択肢を比較し、最終的に `private static let` のフォーマッタを `nonisolated(unsafe)` で運用する方針に決定（読み取り専用想定）
+- シーケンス処理とグラフ用データ
+  - `Range＜Double＞` のシーケンスに対し、`lazy.map(...).max(...)` で絶対値の最大を求める方針を確認（空集合時は `nil`）
+- 画像とバインディングの扱い
+  - `Image(name)`、`featureImage(of:)`、`imageName` の命名と変換
+  - `bindingLandmarksByCategory` のキー名を `categories` として明確化
+  - `Binding＜[Landmark]＞` からの個別 `Binding＜Landmark＞` 生成、`Sequence`（`Identifiable`）に対する `element(id:)`／`landmarks[id]` ユーティリティ
+- 位置情報とカテゴリー処理
+  - `LandmarkCoordinate`、`isSameCategory(as:)` によるフィルタ
+  - `CLLocationCoordinate2D`／`CLLocation` の外部イニシャライザ
+- マップズーム設定と永続化
+  - ズーム型を `RawRepresentable`（`RawValue = String`）とし、`@AppStorage` が利用できるよう設計。`CustomStringConvertible`／`Identifiable` も付与
+- モデル読み込みとエラー設計
+  - `ModelData` を `ObservableObject`（`final class`、`@Published`）として設計し、`Bundle` から JSON 読み込み。`bindingLandmarks`／`bindingFeaturedLandmarks` を `.filter(...)` で構成
+  - `DecodingError` の表示改善を検討。`LocalizedError`／`errorDescription` や `CustomNSError`（`NSLocalizedDescriptionKey`）でのカスタマイズを試行し、期待通りに橋渡しされないケースを確認。結果として `DecodingError` を個別にハンドリングし、必要箇所は `fatalError(...)` で落とす方針に整理
+- プロファイル設計の見直し
+  - `Profile` に `Sendable` を付与。`Identifiable` は不要と判断して削除
+  - 既定値は型側に埋め込まず、`defaultProfile` など使用箇所側でのみ定義する方針へ変更（影響範囲の局所化）
+  - `Season` のシンボルは `rawValue` に依存せず明示マッピングに変更
+
+次回は Notification 周辺から、引き続き読み進めながらリファクタリングを行う予定です。

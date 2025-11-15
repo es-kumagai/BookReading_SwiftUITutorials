@@ -1,0 +1,20 @@
+■ ダイジェスト
+
+技術書チュートリアルを読み進めながら、 SwiftUI のサンプルコードをリファクタリングして学んだ内容を記録した回です。SwiftUI Tutorials を対象に、以下の箇所に具体的に着目しました。
+
+- CircleImage: `Image` は `@State` でないため `let`。ボーダーの色と幅をカスタマイズできるよう `borderColor` と `borderWidth`、影の半径を `borderShadowRadius: Double`（既定値 7）として整理。プレビューで `borderColor` を差し替えて確認。
+- FavoriteButton: `Binding var isSet` は書き込みが必要なため `let` 不可。プレビューでは `@State` を持たせて `$isSet` を渡す構成に変更。`@State` を `private` にする指針など、アクセス制御の方針を確認。
+- FeatureCard: `if let` で `landmark.featureImage` を安全に表示。テキストは用途が伝わるよう「オーバーレイテキスト」と命名（例: `overlayText(landmark:)`）。背景は実装詳細の「グラデーション」ではなく用途の「バックグラウンド」として命名し、`LinearGradient` を使用。必要に応じてテキスト色を `foregroundStyle(color)` でカスタマイズ可能にする案を検討。
+- HikeBadge: `scaleEffect` と `frame` の兼ね合いで見た目が変わる挙動を確認。サイズの 1/3 調整などは SwiftUI の仕様として受け入れ。
+- HikeDetailView: 表示データの切り替えに `KeyPath<Hike.Observation, Range<Double>>` を使用。型消去でプラットフォームごとの縦横レイアウト差を吸収し、共通の実装で構成。ボタン群は選択中の項目にスタイルを当て、押下で `dataPath` を更新。
+- TypeGraph: データ種別ごとに `Color` を割り当て、未知のケースはフォールバック色で継続。`GeometryReader` を用い、`observations.isEmpty` で表示可否を判断。
+- GraphView: 呼び出し側で空データを排除し、前提条件を明確化。全体レンジ計算では `overallRange.isEmpty` をチェックして除算安全性を確保。`ForEach` における `enumerated()` 利用時の `id` 付与とデータ取り回しを見直し。
+- HikeView（一覧／詳細切替）: `withAnimation` と `showDetail` のトグルで、遷移は `moveAndFade` を使用。挙動の細かな違和感は把握した上で今回は現状維持。
+- プレビューとプラットフォーム条件: watchOS 専用ビューのプレビュー問題を切り分けるため、`#if os(watchOS)` や `@available` を用いたガードを試行。
+- ListMenuModifier: `Binding` を受け取り、`onLongPressGesture` と `confirmationDialog` で「お気に入り」「ユーザープロファイル」アクションを提供。アクセス制御を整理。
+- MapView: `@AppStorage` で `zoom` を保持、`coordinate` は `let`。リージョンとスパンの命名を用途基準で見直し、近／中／遠の倍率を返す拡張で管理。
+- ProfileToolbar: `ViewModifier` としてツールバーにプロフィール表示ボタンを追加し、`extension View` で適用可能に。
+- ShowFavoritesOnlyToggle: `Toggle(isOn: $favoritesOnly)` で「お気に入りのみ」表示を切り替え。
+- StarImage: `isActive` に応じた表示。`systemImageName` を `private` に隠蔽。色は `tintColor` を受け取り `foregroundStyle` に反映できるようにし、実際に適用される色を示す名前として `effectiveColor` に改名、アクティブ時に `tintColor` を返すよう不具合を修正。
+
+本動画は技術解説ではなく、チュートリアルを読み進めながら設計意図や命名、プロパティの所有・公開範囲、プレビューやプラットフォーム差異への対処を確認しつつ、必要最小限のリファクタリングを行った記録です。視聴前に、上記の具体的に扱った箇所が中心である点をご確認ください。

@@ -1,0 +1,12 @@
+■ ダイジェスト
+
+技術書を読み進める様子を収録した回です。今回は SwiftUI チュートリアルの macOS 版で、セクション 6 の復習（カスタムメニューコマンド）と、セクション 7（`Settings` Scene でプリファレンス追加）を中心に、設定画面から `MapView` のズームを切り替え、`AppStorage` で永続化する流れを学びました。
+
+- セクション 6（復習）: 選択中アイテムの操作を、`@FocusedValue`／`FocusedBinding` で `selectedLandmark` を受け渡し、`CommandMenu` にカスタムコマンドを追加して実装。メニュー項目は選択の有無で有効／無効を切り替え、押下で `isFavorite.toggle()`。`SidebarCommands`（組み込み）も併用。`@State` の `selectedLandmark` と `ModelData` の更新が連動することを確認。
+- セクション 7: `Settings` シーンを追加し、`MapView` の初期ズームをユーザー設定化。`MapView.Zoom` を `enum`（`String` の `rawValue`、`CaseIterable`、`Identifiable`、`id` は `self`）として定義し、`@AppStorage("MapView.zoom")` で永続化。デフォルト値は `Zoom.init()` で一元化。
+- ズーム反映: `private extension MapView` でズームに応じた `CLLocationDegrees` の `delta` を算出し、`MKCoordinateSpan`／`MKCoordinateRegion` を生成して `Map` の `region` に反映。
+- 設定画面ビュー: `LandmarkSettings` を作成し、`Form` と `Picker("Map Zoom", selection: $zoom)`、`ForEach(MapView.Zoom.allCases)`、`.pickerStyle(.inline)`、`.frame(minWidth: 300)`、`.navigationTitle("Settings")` を構成。表示の整合性のため `MapView.Zoom` に `CustomStringConvertible` を実装し、`Text` の拡張で `Text(z)` と書けるように整理。
+- アプリ組み込み: `#if os(macOS)` ガード内で `settings { LandmarkSettings() }` を `App` に追加。
+- 動作確認: ビルド後に設定で `Near`／`Medium`／`Far` を切り替え、`region` が `delta` に追従することを確認。コピペ由来の「invalid character」発生時は記号の混入を修正。
+- 確認問題で扱った要点: `Picker` の `selection` は `Hashable` 準拠が必要。リスト選択のバインドは `List(selection: $selectedLandmark) { ForEach(landmarks) { LandmarkRow(landmark: landmark).tag(landmark) } }` のパターン。トップレベルメニューの追加はアプリに `commands` モディファイアを提供する方法を採用。
+- リファクタ検討: `delta` という数値を返すより、`MKCoordinateSpan` を返す関数（例: `regionSpan`）にして意図を明確化。

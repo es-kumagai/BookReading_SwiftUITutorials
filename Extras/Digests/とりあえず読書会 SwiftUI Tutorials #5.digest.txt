@@ -1,0 +1,12 @@
+■ ダイジェスト
+
+技術チュートリアルを読み進める様子の録画です。Apple の SwiftUI Tutorials 1 章から、セクション 7「データをチャイルドビューに渡す」とセクション 8「プレビューをダイナミックに」を中心に学習しました。実装やプレビューを都度動かしながら理解を深めています（技術解説ではなく読み進めながらの学習です）。
+
+主に着目した技術的な内容
+- データの受け渡しとビュー構成: `CircleImage`、`MapView`、`LandmarkDetail` をハードコードからデータ駆動へ変更。`Landmark` のモデルから画像名を介して `Image` を生成する方針に整理し、`LandmarkImage` のメンバーワイズイニシャライザーと Codable の `init(from:)` を `extension` で共存させる構成を確認。プレビューでも引数を明示的に渡すよう修正。
+- `MapView` の座標入力とバインディング: 独自の座標型から `CLLocationCoordinate2D` へ変換して使用。`region` を座標から計算し、`Map` の `region` には `.constant` を渡してインタラクションによる値変更が外部へ伝播しないようにする判断を確認。`@State`／`@Binding` の適用可否を検討し、この入力プロパティは `@State` にしない方針に。`@State private var` の原則にも言及。
+- 詳細画面のレイアウトとナビゲーション: `LandmarkDetail` を `VStack` から `ScrollView` に変更し、`Spacer` を削除。`navigationTitle` に `landmark.name` を設定し、`navigationBarTitleDisplayMode(.inline)` を適用。`MapView` と `CircleImage` に `landmark` を渡し、テキストは `landmark.name`、`landmark.description` を使用。見出しは文字列補間 `About \(landmark.name)` で生成。`LandmarkList` からの遷移で内容が切り替わることを確認。
+- プレビューのデバイス設定: キャンバスで iPad プレビューへ切り替え、オリエンテーションを Portrait／Landscape に変更して `NavigationSplitView` のサイドバー／ディテールの表示挙動を確認。キャンバスのデバイス設定オーバーライドの使い方を実践。
+- 確認問題で扱った API: 動的リスト表示の `ForEach`、`Identifiable` に非準拠要素での `List(_:id:)`／`ForEach(_:id:)`、画面遷移の `NavigationLink` を再確認。
+
+次回は「Handling User Input」に進み、リストのフィルタリング用トグルとお気に入りのスター ボタンを追加していきます（本動画では導入のみ）。

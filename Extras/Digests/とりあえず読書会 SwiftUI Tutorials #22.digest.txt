@@ -1,0 +1,60 @@
+■ ダイジェスト
+
+（1/3）
+それでは、とりあえず読書会を始めます。前回はリファクタリングを進める中で、バインディングが反映されない問題に直面しました。原因が UI の更新遅延なのか、コードのミスなのか切り分けできていない状況でしたので、まずはチュートリアルのステップをもう少し進めて、落ち着くところまで持っていき、そこから原因を特定していく方針にしました。リファクタリングと機能追加を同時に進めるのは遠回りになりやすく、原因切り分けが難しくなるため、本来は避けるべきですが、今回は学習として壁にぶつかりながら進めていきます。
+
+現状はステップ 3 までで、ページのドットボタンを配置したものの、押してもページが移動しません。UIKit 側のステート連携がうまくいっていない可能性があり、次のステップとして、テキストビューにカレントページのプロパティを追加して状況を確認します。具体的には、ページビューの下に `VStack` を置き、`Text` で `currentPage` を表示するようにしました。この状態でスワイプやボタン操作をしても `currentPage` は変化せず、連携がまだできていないことを確認しました。
+
+作業中に `appendInterpolation` が deprecated であるという警告が出ました。`LocalizedStringInterpolation` が未ローカライズなデバッグ記述を生成するため、`LocalizedStringKey` の String Interpolation を使うか、`LocalizedStringResource` を使う、もしくは `LocalizedStringResourceConvertible` に準拠させるべきという内容です。`PageNumber`（自作型）に対して `LocalizedStringResourceConvertible` 準拠を検討しましたが、`String` リテラルベースのキー制約や `String.LocalizationValue` など、少し重い要求があるため、まずは `Text(verbatim:)` を用いる、または `LocalizedStringKey.StringInterpolation` に対して拡張で `appendInterpolation(_ pageNumber: PageNumber)` を定義し、適切に文字列化するアプローチにしました。この際、`import SwiftUI` が必要です。SwiftUI の `Text` は `LocalizedStringKey` ベースの補間を持ち、`appendInterpolation<T>(_ value: T)` は deprecated なので、`String`/`Substring`、`Formatter`、`FormatStyle`、`Text`、`AttributedString` など、用意された経路を使うのが正攻法です。ここでは `description` を渡すなど、明示的に安全な補間に切り替えています。
+
+次に、`PageViewController` の `Coordinator` を `UIPageViewControllerDelegate` に準拠させ、`pageViewController(_:didFinishAnimating:previousViewControllers:transitionCompleted:)` を実装します。ページスワイプのアニメーションが終了し、`completed` が `true` のときに、現在表示中のコントローラーを特定し、そのインデックスからページ番号を求めて `Binding` の `currentPage` を更新します。`visibleController` は `pageViewController.viewControllers?.first` から取得し、見つからない場合は早期リターンします。インデックスが取れない場合は、想定外の `UIViewController` が混ざっている致命的な状態なので `fatalError` にします。ロジックエラーではなく、復旧不能なランタイム前提崩壊であるためです。
+
+コーディネーター内部の型周りも整理しました。本来、配列 `pageControllers` には `UIHostingController<Page>` しか入らないため、`typealias PageController = UIHostingController<Page>` を用意し、できる限りこの型で扱いたい意図があります。ただし API の都合で `UIViewController` として受け取る箇所があり、その場合は都度 `as? PageController` でキャストして安全に処理します。さらに、インデックス探索に関しては、`UIViewController` が `Equatable` ではないため `firstIndex(of:)` は使えません。そこで恒等性比較（`===`）を使う拡張を定義します。
+
+```
+extension Collection where Element: UIViewController {
+    func firstIndex(of viewController: UIViewController) -> Index? {
+        firstIndex(where: { $0 === viewController })
+    }
+}
+```
+
+配列インデックス（`Int?`）に限定したい場合は `Array` 拡張にします。
+
+```
+extension Array where Element: UIViewController {
+    func firstIndex(of viewController: UIViewController) -> Int? {
+        firstIndex(where: { $0 === viewController })
+    }
+}
+```
+
+また、`controller(forPageNumber:)` の逆である `pageNumber(for viewController:)` を用意し、`pageControllers.firstIndex` からページ番号に変換する処理を一本化しました。`PageController` と `UIViewController` を受け取る 2 つのオーバーロードを用意し、後者では内部で `as? PageController` を試みてから前者に委譲します。これにより、各所でのキャストや重複ロジックを削減できました。
+
+（2/3）
+ページ番号レンジの扱いも整理しました。`startPageNumber` は `pageControllers.startIndex` を `pageNumber(fromIndex:)` で変換したもの、`endPageNumber` は `endIndex` を変換したものとし、`lastPageNumber` は `endPageNumber` の 1 個手前に定義します。これにより、`lowerBound`/`upperBound` に依存した分岐を避け、ページ番号ベースで統一的に記述できるようにしました。名前も `controller` 系を `pageController(for:)` に揃え、意図を明確にしています。
+
+このリファクタリングにより、ページ番号を軸に `pageController(for: pageNumber)` を直接取得できるため、インデックス計算やキャストが大幅に減りました。例えば「次へ」遷移は、`pageNumber.next` を `switch` で分岐し、`endPageNumber` に達したら `startPageNumber` に戻す、といった形に簡潔化しました。同様に「前へ」も `pageNumber.previous` 相当で記述します。範囲チェックは `pageControllers.indices` にページ番号から得たインデックスが含まれるかだけを見ればよく、想定外の型混入は構造上起こらない前提に整理されたため、エラーチェックも最小限で済むようになりました。
+
+つづいて、デリゲート設定を見直しました。`UIPageViewController` に `delegate` をセットし忘れると、スワイプ完了時に `currentPage` へ反映されません。`makeUIViewController` 内で `pageViewController.delegate = context.coordinator` を確実に設定し、双方向のバインディング（スワイプでの更新とテキスト表示の更新）が行われるようにしました。
+
+挙動確認では、スワイプやボタン操作に対して想定外のページ遷移が発生しました。例えば、1 → 2 へスワイプしたのに、直後に 2 → Last（最終ページ）へ移ってしまう、または 1 回のスワイプで 2 ステップ進む、といった症状です。ログを精査すると、`pageViewController(_:viewControllerBefore:)`（戻る側）が不意に呼ばれている、もしくは `pageViewController(_:viewControllerAfter:)`（進む側）と干渉している痕跡が見られました。`didFinishAnimating` 内の `completed` 判定や、`visibleViewController` からのページ番号算出は正しく見えますが、ページ番号更新のタイミングとデータソース側の「前後ページ問い合わせ」が競合している可能性があります。
+
+さらに、`updateUIViewController` 相当でのログを見ると、`self.currentPageNumber` と `context` 側のバインディング値に一時的なズレがあり、`context` は 1、`self` は 2 のように、反映順序で不一致が生じていました。`UIPageViewController` が次ページを要求するタイミングと、`Binding` 更新のタイミングが前後しているため、`moveForward(to:)` ログの直後に別の「次」要求が走るなど、連鎖的に挙動が乱れているように見えます。
+
+このため、ログを整理して遷移の前後関係を追跡しました。たとえば、`Move Next`、`Move Previous`、`Start -> ... -> Last` のように、開始位置・目的位置・端ラップの有無を可視化して、`Before`/`After` どちらが呼ばれたか、どのページ番号のコントローラーが選ばれたかを逐次確認しました。結果として、1 → 2 のスワイプ直後に `Before` が呼ばれて 1 → Last にジャンプするなど、期待と異なる問い合わせ順が見えています。これはデータソース実装（戻る側・進む側）のいずれか、あるいは両方での境界処理（先頭/末尾のループや選択ロジック）に整合性の欠けがあることを示唆します。
+
+ページ番号とインデックス間の変換は次の方針で確認しました。`index(fromPageNumber:)` は「スタートページからのオフセット」（ページ番号は 1 始まり）として定義し、`startIndex` との相対でインデックスを出します。`lastPageNumber` は `endPageNumber - 1` とし、`next`/`previous` はレンジ内でラップするルールに統一しました。この定義自体は問題なさそうです。したがって、疑わしいのはデータソース内で「次/前」を返す分岐や、`pageViewController.setViewControllers(_:direction:animated:completion:)` 相当の呼び出し順、あるいは `didFinishAnimating` における `currentPage` の更新がデータソースの問い合わせと干渉している点です。
+
+（3/3）
+トラブルシューティングの一環として、`didFinishAnimating` 内での `currentPage` 代入を一時的に外して挙動を観察しました。代入を外すと「スワイプしても `currentPage` が変わらない」というチュートリアル記載どおりの挙動になりますが、同時にデータソース側の不自然な連鎖は残るため、根本原因はやはりデータソース（`viewControllerBefore`/`viewControllerAfter`）の境界処理か、ページ番号からコントローラーを返す箇所の一貫性にあると考えています。特に、1 回のスワイプで `Before` と `After` の両方が呼ばれるケースや、同じ操作で 2 回連続して「次」要求が発生しているログが見えるため、返したコントローラーと内部状態の不整合がトリガーになっている可能性が高いです。
+
+まとめると、以下の点まで実施・確認しました。
+- `Text` の補間での `appendInterpolation<T>(_:)` 非推奨への対応として、`LocalizedStringKey.StringInterpolation` の拡張や `Text(verbatim:)` など、許容された経路に切り替えました。
+- `Coordinator` を `UIPageViewControllerDelegate` に準拠させ、`didFinishAnimating` で表示中コントローラーからページ番号を求め、`Binding` を更新する実装を追加しました。
+- ページ番号中心の設計にリファクタリングし、`pageController(for: pageNumber)`、`pageNumber(for: viewController)`、`startPageNumber`/`endPageNumber`/`lastPageNumber` を導入して、インデックス依存やキャストを削減しました。
+- `UIViewController` の恒等性比較によるインデックス探索拡張を追加し、`firstIndex(where:)` ベースで安全に位置を特定できるようにしました。
+- `delegate` の設定漏れを解消し、スワイプ完了時の反映経路を確保しました。
+- それでもデータソース側で「前/次」問い合わせが意図せず連続するなど、境界処理の不整合が残っていることをログで確認しました。
+
+現時点では、ページの変換ロジック（特に境界でのラップ）と、データソースが返す次/前コントローラーの整合性に問題がある可能性が高いと見ています。チュートリアルのコードと突き合わせながら、`pageViewController(_:viewControllerBefore:)` と `pageViewController(_:viewControllerAfter:)` の両メソッドで、ページ番号の計算と `pageController(for:)` の返却が常に一致しているか、また `didFinishAnimating` の更新タイミングが二重要求を誘発していないかを重点的に見直します。次回はこの部分をデバッグ中心に追い込み、どこで整合性が崩れているかを特定して修正していきます。今日はここまでにします。お疲れさまでした。

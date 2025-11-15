@@ -1,0 +1,32 @@
+■ ダイジェスト
+
+この動画は、Apple の SwiftUI Tutorials を読み進めながら、ランドマークリストのフィルタ周りを中心にコードを整えていく様子を記録したものです。技術的に着目したポイントは次のとおりです。
+
+- フィルタ設計の見直し
+  - `All` が `Lakes`・`Rivers`・`Mountains` と性質が異なることへの違和感を整理し、分岐や型の扱いを一貫させる方針を検討。
+  - `rawValue` 同士の比較をやめ、ランドマークのカテゴリーとフィルタのカテゴリーを同一の概念（型）で扱うリファクタの方向性を確認（`.all` の特別扱いは今後整理）。
+
+- フィルタ状態の集約と変更検出
+  - `Filter` 構造体を導入し、`showFavoritesOnly` と `categoryFilter` を集約。`Equatable`／`Hashable` 化で変更検出を可能に。
+  - `onChange(of: filter)` を用いてフィルタ変更を検出し、更新処理をトリガーする実装を確認。
+    - 例: `onChange(of: filter) { oldFilter, newFilter in print(newFilter) }`
+
+- 「お気に入りのみ」時の選択項目が消える問題への対処
+  - 詳細画面でお気に入りを外すとリストから項目が消え、`Binding` が途切れて表示が不整合になる問題を検証。
+  - 解決策として、フィルタ結果そのものをキャッシュするのではなく、表示対象の ID を `@State` に保持し、`Binding` は都度計算する方式へ変更。
+    - 表示用 ID 配列 `displayingLandmarkIDs` を導入。
+    - `ModelData` の `landmarks` をフィルタ → `.map` で `id` 抽出 → `displayingLandmarkIDs` を更新。
+    - リスト表示は `displayingLandmarkIDs` に含まれるものだけを `Binding＜Landmark＞` に組み立てる計算型で提供。
+  - 更新のタイミングは `onAppear` と `onChange(of: filter)` で `updateLandmarkList` を呼んで同期。
+  - これにより、「お気に入りのみ」中でも即時に項目が消えず、フィルタ条件を変えた時点で整合的に反映される挙動を実現。
+
+- 命名と責務の整理
+  - カテゴリー関連の名前付けを見直し（例: `CategoryFilter` など）、条件組み立ては関数内に寄せるか、将来的に `FilterCondition` 型へ委譲する方針を検討。
+  - 一時的に導入した格納型の `filteredLandmarks` や外部データソース案は、`Binding` 断絶の問題から採用を見送り、計算型＋ID キャッシュへ集約。
+
+補足的に触れた話題（検討のみ）
+- watchOS での `categoryFilter` 取り扱い（未サポート前提で進行）
+- `Hashable` と `Equatable` の使い分け（変更検出の観点）
+- シーケンスの `.lazy` 最適化の可否（今回は不要と判断）
+
+コード例やシンボル: `Filter`、`showFavoritesOnly`、`categoryFilter`、`displayingLandmarkIDs`、`updateLandmarkList`、`onAppear`、`onChange`、`Binding＜Landmark＞`、`Binding＜Bool＞`、`ModelData.landmarks`、`filter`、`map`、`contains`、`rawValue`、`.all`

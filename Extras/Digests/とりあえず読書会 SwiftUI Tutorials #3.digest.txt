@@ -1,0 +1,16 @@
+■ ダイジェスト
+
+技術書を読み進める様子を録画した回です。Apple 公式の SwiftUI Tutorials 第 1 章 Set up を読みながら、コードを書き換えて API デザインや Swift 6 の並行安全性を意識して確認しました。ランドマークアプリのデータ読み込みを中心に進めています。
+
+今回具体的に確認・手を動かした点
+- `landmarkData.json` を `Bundle.main.load(forResource: "landmarkData", withExtension: "json", as: [Landmark].self)` で読み込むようにし、戻り値の型だけでのオーバーロードを避けるために引数ラベル ``as`` を追加しました。
+- データの置き場所を見直し、安易なグローバルではなく `LandmarksApp` に保持させて `ContentView` へ渡す構成に整理しました。編集しない前提では `let` に、将来編集する可能性も見据える場合は `@State`／`@Binding`（例：`@Binding var landmarks: [Landmark]`、呼び出し側は `ContentView(landmarks: $landmarks)`、プレビューは `.constant(landmarks)`）を検討しました。
+- Swift 6 のコンカレンシーチェックに配慮し、編集しない配列は `let` で不変化、必要に応じてモデル型を `Sendable` に適合させる方針を確認しました。
+- JSON デコード時の失敗要因を洗い出し、`DecodingError` の各ケースに着目して `context.debugDescription` や `codingPath` を参照する運用を確認。`switch` には `@unknown default` を入れる方針にしました。
+- モデルのキー不一致（`imageName` と `image`）を `CodingKeys`（例：`enum CodingKeys: String, CodingKey { case image = "imageName" }`）で解消しました。`CodingKeys` は `private` にしてモデル外から隠蔽しています。
+- `load` の戻り値は非オプショナルにし、失敗時は一時的に `fatalError` で落として不整合を早期に炙り出す方針にしました（必要に応じて `#if DEBUG` でスタブを使う）。
+- プレビュー環境でのリソース読込について、バンドルと配置、ターゲットメンバーシップを確認しました。
+- プロジェクトを `Views`／`Models`／`Resources` などにグルーピングし、`ContentView`、`CircleImage`、`MapView`、`Landmark`、`ModelData`、`landmarkData.json` を整理しました。
+- コレクション表現の見通しを良くするために `typealias Landmarks = [Landmark]` を導入しました。
+
+次回は Section 2 の Row View（Create a row view）作成に進みます。学習しながら読み進めていますので、実装の選択肢や設計上の判断もその場で検討していきます。

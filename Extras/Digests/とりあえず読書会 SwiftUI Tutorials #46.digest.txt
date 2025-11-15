@@ -1,0 +1,27 @@
+■ ダイジェスト
+
+この動画は、技術書である SwiftUI Tutorials を読み終えた後のリファクタリングを読み進めながら学習している様子を記録したものです。扱った技術的な内容は次の通りです（具体的に着目して検討・修正した点と、言及のみの点を区別しています）。
+
+- 具体的に検討・修正した点
+  - カテゴリ型の比較基準を `description` から `rawValue` に統一。`String`、`Sendable`、`Codable`、`Hashable`、`Comparable`、`Identifiable`、`CustomStringConvertible` の準拠整理。
+  - `Hike` の距離表示用フォーマッタを `nonisolated(unsafe) private static let` に集約し、外部から変更不可に。必要なら `MainActor` で保護する方針を確認。
+  - 画像とモデルの変換を「値を保存する型変換」で提供。ラベル省略のイニシャライザや `featureImage(of:)` の設計方針を整理。
+  - `Observations`（`Hike` の情報）を `Sendable`、`Codable`、`Hashable` に。`SingleValue` のエンコード／デコードと `CodingKeys` の `private` 化。
+  - `Landmark` まわりの型エイリアス（`FindingLandmark`、`BindingLandmarksByCategory`、`ModelData`）の整合を取り、`ForEach` 用のキーと一致するように見直し。
+  - `Landmark` の `private` 拡張で `CodingKeys` を隠蔽し、`imageName` を介した `Image` のエンコード／デコードを `SingleValueDecodingContainer` で処理。
+  - `BindingLandmarks` の役割を「各 `Binding` をまとめて 1 つの `Binding` を作る」ものとして整理。ゲッター／セッター実装で `zip` を活用し、クロージャに `@Sendable` を付与。型推論が効かない箇所は明示型で対応。
+  - ID ベースのサブスクリプトや、`isSameCategory`／`addCategory` の実装を確認。`Sequence` のイテレーターで先頭要素を基準に `allSatisfy` で一致判定する実装と、`Collection` なら `first`＋`dropFirst()` による書き換え可能性を比較検討。`lazy` な処理は現状維持。
+  - `LandmarkCoordinate` を `struct` として `Sendable`、`Hashable`、`Codable` 準拠にし、`CLLocationCoordinate2D`／`CLLocation` との相互変換イニシャライザを実装。
+  - マップのズーム表現を `enum` ＋ `RawValue` で設計し、永続化を意識。`CustomStringConvertible` の `description` は `rawValue` を返す。`Text` 拡張で `MapViewZoom` をそのまま表示可能にする方針を採用（`View` 準拠は避ける判断）。
+  - モデルデータのプロファイル管理を見直し。`static let` のデフォルトを前提に、`effectiveProfile` を `get`／`set` で公開し、内部の `profile` は非公開化して経路を一本化。命名は「デフォルトを加味した有効値」を示す `effective` を採用。
+  - バンドル読み込みの命名／責務整理。関数名を `read(fromResource:)` とし、途中値の命名を `rawData`／`value` などに分離。読み込みフロー（`url(forResource:)` → `Data(contentsOf:)` → `JSONDecoder`）のエラー分岐を明確化。
+  - `landmarksByCategory`、`filteredLandmarks` の振る舞い確認と、バンドル読み込み呼び出しの統一。
+  - `Profile`（`Codable`）と `Season`（`Identifiable` を含む定義）の構成確認。
+  - `NotificationContent` の初期化で `@UserInfoAccessor` マクロを用い、`userInfo` からのアクセサ生成で記述重複を削減。
+
+- 言及のみ（深掘りはせず方針確認に留めた点）
+  - マクロ活用の前回までのリファクタリングは一段落。
+  - `BindingLandmarksByCategory` の `keys` と `categories` の並存は現状維持。
+  - `lazy` の有無によるパフォーマンス差は今回は未検証。
+
+動画内では、上記のようにコードを実際に読み替えながら、`Codable` 設計、`Binding` の構成、列挙型の永続化設計、バンドル読み込み API の命名とエラーハンドリングなどを、実装と命名の両面から検討しています。技術解説というより、読み進めながら判断を積み重ねていく学習の記録です。

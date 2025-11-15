@@ -1,0 +1,16 @@
+■ ダイジェスト
+
+この動画は Apple 公式 SwiftUI Tutorials を読み進める様子の記録です。今回は Working with UI Controls を進め、プロフィール編集画面を作りながら学びました。技術解説ではなく、読み進めつつ実装を試し、設計方針を検討しています。
+
+主に取り組んだ内容
+- `EditMode` と `EditButton` の導入と `Environment` からの取得。`inactive`／`active`／`transient` を `switch` で明示分岐し、未知ケースの `default` をどう扱うか（`fatalError` の是非含む）を検討しました。
+- `ProfileEditor` ビューを作成し、`ProfileHost` の条件付き表示に組み込み。編集時はエディタ、非編集時は概要の切り替えを実装しました。
+- `TextField("Display Name", text: $profile.username)` で表示名の編集を追加しました。
+- 通知設定用に `Toggle(isOn: $profile.prefersNotifications)` を追加しました。
+- 季節選択の `Picker` を追加し、`selection: $profile.season`、`ForEach(Season.allCases, id: \.self)`、`Text(season.rawValue).tag(season)` の形で構成。`Season` を `enum` + `CaseIterable`（列挙の網羅）とし、識別には `Hashable` を用いました。`rawValue` の誤用に気付き、表示用の記号は `rawValue` ではなく別プロパティ（例: `symbol`）で持つ設計に修正しました。
+- 期日用に `DatePicker` を追加。`ClosedRange<Date>` の `goalDateRange` を `Calendar.date(byAdding:value:to:)` で 1 年前後の範囲に計算し、命名（`goalDateRange`）や配置、`private` 化などのスコープ設計を検討しました。
+- 変更の遅延反映を実装。`onAppear` でモデルからドラフトを作成し、`onDisappear` で書き戻す方針に整理。`Cancel` ボタンを追加して、キャンセル時はドラフトをリセットする挙動を確認しました（`.onChange` での `EditMode` 変化検知が難しい点も確認）。
+- `ViewBuilder` 内での `assertionFailure` 利用可否を検討し、結果として `EmptyView` を返す選択を試しました。
+
+補足
+- 英語表現（冠詞）やモーダル／ノンモーダル、`NavigationStack` の詳細は言及のみに留め、掘り下げていません。

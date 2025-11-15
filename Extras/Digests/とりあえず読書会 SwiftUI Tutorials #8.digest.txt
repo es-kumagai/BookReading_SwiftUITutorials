@@ -1,0 +1,14 @@
+■ ダイジェスト
+
+技術書を読んでいく様子を録画しています。今回は SwiftUI チュートリアルのバッジ章を進め、前半で前回の復習として `@Bindable`／`@Binding` に触れたうえで、後半はバッジの背景を描く「Drawing Paths and Shapes」に取り組みました。
+
+具体的に学んだこと:
+- `@Bindable` を使った更新がチュートリアルどおりに動作せず、`$` を使わず自前で `Binding` を生成する方法で `isFavorite` を更新して動作確認しました（ここは挙動の確認と代替手段の採用まで）。
+- バッジ背景用の六角形データ `HexagonParameters` を作成。内部に `Segment`（`line`／`curve`／`control` の 3 点）を定義し、`CoreGraphics` の `CGPoint` と単位正方形座標（原点は左上、X 正方向は右、Y 正方向は下）で `static let segments` と `adjustment` を用意。
+- `BadgeBackground` を実装し、`Path` の `move(to:)`／`addLine(to:)`／`addQuadCurve(to:control:)` を使って六角形のアウトラインとコーナーのベジェカーブを描画。
+- `GeometryReader` で外側サイズに合わせ、幅・高さの小さい方を採用。`xScale`／`xOffset` を用いたスケーリングとオフセット調整、`Path` は `aspectRatio(1, contentMode: .fit)` を指定。
+- 塗りは `LinearGradient`（`startPoint`／`endPoint` とカラー配列）で適用。
+- リファクタリングとして、サイズ計算を `canvasSize`／`badgeSize` に整理し、`Double` と `CGFloat` の混在はリテラル変換と型推論で吸収。`extension CGSize` による `+`／`-`／`*` の演算子オーバーロードも試しましたが、最終的には可読性を優先してシンプルな実装に戻しました。
+- パス生成は `private extension BadgeBackground` に `makePath` として切り出し、セグメント反復は `for-in` に変更。`HexagonParameters` の値をパラメータ構造体に寄せて持たせる設計も試行し、グラデーションや `xScale` を含む設定を一箇所に集約。
+
+到達点: 六角形の背景パスとグラデーション描画まで完了。次回はバッジシンボルのオーバーレイ作成へ進みます。技術解説というより、チュートリアルを読み進めながら実装と試行錯誤を重ねた内容です。

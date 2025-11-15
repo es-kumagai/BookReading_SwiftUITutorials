@@ -1,0 +1,10 @@
+■ ダイジェスト
+
+この配信は、技術書を読み進める様子の記録です。Apple の SwiftUI Tutorials を題材に、watchOS の通知 UI を中心としたリファクタリングを、実装と検証を行いながら進めました。今回は次の技術的論点に具体的に着目しています。
+- Landmarks サンプルの通知フローでのモデル設計見直し：`NotificationController` 内で `ModelData` をデフォルト初期化してしまう問題を整理し、データソースを一元化する方針を検討しました。
+- 通知シーンの制約確認：`WKUserNotificationHostingController` と `WKNotificationScene` はコントローラがシステム生成されるため任意のイニシャライザ注入ができず、`EnvironmentObject` の注入はクラッシュすることを確認しました。
+- デリゲート関連の検討とビルド修正：`@WKApplicationDelegateAdaptor` と `@UIApplicationDelegateAdaptor` の違い、`WKExtensionDelegate` の扱い、`#if os(watchOS)` による条件コンパイルや `WatchKit`／`UIKit` のモジュール条件付けを整理。プロパティラッパーを `typealias` で共通化する試行も行いました。
+- 通知ペイロードの扱い方針：`UNNotificationContent.userInfo` に ID を載せ、受信後にローカルのモデルやアセットから詳細を解決する流れを確認。必要に応じた `UserDefaults` や `App Group` の利用案も整理しました。
+- 共有モデルの実装落とし込み：アプリ側の `LandmarksApp` に `static` な共有 `ModelData` を持たせ、通知表示と本体 UI の両方が同じモデルを参照する形で一元化し、デリゲート経由の共有は採用せずに簡素化しました。
+- 動作確認：`print`、Xcode、Console.app を使って通知ハンドラと `ModelData` 初期化タイミングを確認しました。
+- 次回予定：watchOS ではプロフィールボタンを表示しないよう、`#if os(...)` などで UI を分岐する対応を検討します。

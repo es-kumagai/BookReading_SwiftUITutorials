@@ -1,0 +1,11 @@
+■ ダイジェスト
+
+SwiftUI チュートリアルの完成コードを題材に、読み進めながらリファクタリングと API デザインの検討を行いました。主にアニメーションの命名、タブ周りの整理、 SF Symbols の扱い、 macOS 版のレイアウト分割、通知許可の取得方法に着目しています。以下が動画内で具体的に手を動かした内容です。
+- `Animation` 拡張の `ripple(index:)` を、用途が伝わる命名に見直し。遅延の係数として使っている点から `delayFactor` を採用し、引数型を `Double` に変更。呼び出し側ではインデックス `Int` を `Double` に変換して `delayFactor` に渡す方針に統一
+- iOS 版 `ContentView` の `TabView(selection:)` 構成を保ちつつ、`private extension ContentView` に `tabItem(label: systemImageName: content:) -＞ some View` を用意。`@ViewBuilder` で受けたコンテンツに `.tabItem { Label(label, systemImage: systemImageName) }` を適用する形で重複を整理
+- SF Symbols を文字列リテラルで直書きしない実験として、`enum SystemImage: String` を定義。あわせて `Label` と `Image` に `SystemImage` を受け取るイニシャライザを拡張し、`Label` 側は `where Title == Text, Icon == Image` の制約に合わせて実装。呼び出しを `Label("Featured", systemImage: .starFill)` や `Image(systemImage: .personCropCircle)` のように簡潔化（ケース例: `starFill`、`star`、`personCropCircle`、`line3Horizontal` など）
+- macOS 版 `ContentView` では、`VStack` 内の `HStack` ＋ `Spacer` ＋ `Button` と `ProfileSummary` からなるヘッダー周りを整理。`private extension ContentView` に `@ViewBuilder` な `headerView`、`summaryView` を設けて見通しを向上
+- 通知許可の取得では、`.task` 内で `UNUserNotificationCenter.current()` と `requestAuthorization(options:)` を使用。現状は戻り値の `Bool` と `Error` を捨てるため未使用警告を避ける書き方（例: `_ =`）に言及しつつ、`private let userNotificationCenter = UNUserNotificationCenter.current()` へ切り出す案を検討
+- 言及のみ: `TabView` が `@ViewBuilder` 経由の複数子ビューをどうタブとして判別しているのかへの疑問、`Xcode` の挙動の差異についての観察
+
+次回は `LandmarkSettings` の確認に進む予定です。

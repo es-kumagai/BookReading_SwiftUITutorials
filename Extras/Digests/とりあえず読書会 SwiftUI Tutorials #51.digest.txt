@@ -1,0 +1,24 @@
+■ ダイジェスト
+
+この動画は、 SwiftUI チュートリアルのコードを読み進めながら、実装をリファクタリングしていく様子を記録した回です。特に `LandmarkCommands` と iOS 向けのページコントロール周りを題材に、実際に動かしつつ整理しました。
+
+- `LandmarkCommands` の見直し
+  - ファイル名で OS を示すより `Target Membership` を真実の所在とする、という Single Source of Truth の観点を確認。
+  - `@FocusedBinding` による `selectedLandmark`（`Binding＜Landmark?＞`）の扱いを整理。`Wrapped Value` は `nil` になり得るため、選択がある場合のみ `CommandMenu` の項目を出す方針（`if let` でアンラップ）に変更。強制アンラップを排除。
+  - `Binding＜Landmark?＞` から `Binding＜Bool＞`（`isFavorite`）へ直接アクセスできないため、`Binding(get:set:)` もしくは `Binding` の拡張による `init?` でオプショナルを外す手法を採用。`Toggle` には非オプショナルの `Binding＜Bool＞` を渡す。
+  - メニュー設計を調整。トップレベルの `CommandMenu` は常時表示し、子項目（`Mark`／`Remove`）は選択時のみ表示。`disabled` ではなく非表示で扱う。
+  - メニュー専用の `FavoriteMenuItem` を作成し、`@Binding var landmark: Landmark?` を受け取り、`isFavorite` に応じてタイトル（例: `Mark as Favorite`／`Remove Favorite`）を切り替える。
+
+- Xcode プロジェクト観点
+  - フォルダ構成やファイル名に情報を重ねない方針を確認。`プロジェクトナビゲータ` と `Build Settings`／`Target Membership` の役割を整理。
+
+- iOS のページコントロール（`PageControl`）の検証
+  - `UIViewRepresentable`＋`Coordinator` で `UIPageControl` を橋渡し。`numberOfPages` 設定と `.valueChanged` のターゲットを `updateCurrentPage` に接続。
+  - 逆方向更新（ SwiftUI → UIKit ）で `owner` を適切に更新する実装を復活させ、`updateUIView` で `owner` を差し替えない方針を確認（バインディングの陳腐化を防ぐため）。
+  - 可視性を調整（`Coordinator` の公開範囲、`fileprivate(set)`、`@MainActor`、`@objc` の付与など）。iOS シミュレーターで挙動を確認。
+
+- `PageNumber` 型の導入
+  - `Int` をラップしてページ番号を表現し、インデックス（0 起点）との取り違えを防止。`start`（1 起点）と 0 起点オフセットの両方に対応。
+  - 比較や加減算などの拡張を検討しつつ、文字列化は一旦 `String(describing:)` に統一。
+
+本動画は、技術解説の完成形ではなく、読み進めながら実装を試し、動作を確認していく学習過程の記録です。具体的には、`@FocusedBinding` のオプショナル取り扱い、 `Binding` の写像、メニューの表示条件、`UIViewRepresentable`／`Coordinator` での更新フローと可視性設計、そして `PageNumber` による型安全化に着目しています。次回は `PageView` 周りを続けて見ていきます。

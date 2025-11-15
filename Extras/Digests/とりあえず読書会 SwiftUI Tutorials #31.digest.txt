@@ -1,0 +1,15 @@
+■ ダイジェスト
+
+SwiftUI のチュートリアルを読み進め、最終セクションの macOS アプリ対応に着手しました。既存の Landmarks を macOS 向けに移植しながら、次の技術的トピックに取り組んでいます（読みながら学習している作業記録です）。
+
+- プロジェクトに macOS ターゲットを追加。テンプレートは macOS ＞ App、ターゲット名は `macOS Landmarks`、言語は Swift。スキームを `macOS Landmarks` に切り替え、Manage Schemes で確認
+- macOS 用に自動生成された `LandmarksApp` を削除し、既存のエントリに統合。`ModelData`、`MapView`、`FavoriteButton`、`LandmarkListRow`、リソース一式を共有し、ファイルインスペクタの Target Membership で `MacLandmarks` にチェック
+- アセットの整備。`Assets.xcassets` の Empty App Icon を削除し、ダウンロード済み `Resources` の `AppIcon` を macOS 用スロットへ配置
+- macOS 用の `ContentView` に `LandmarkList` を組み込み。共通とプラットフォーム固有を分離してプレビューを用意
+- `LandmarkDetail`（macOS 向け）を新規作成。iOS 版をベースに、`VStack(alignment: .leading)` と `Divider()` を追加、`MapView` 以下を `VStack` で囲み、ヘッダーは `HStack(spacing: 24)` に。`offset(y: -50)` をサークル側から `VStack` に移動。画像は `resizable()` と `frame(width: 100, height: 100)` を設定。`FavoriteButton` は `PlainButtonStyle` に変更
+- マップ右上に「Open in Maps」ボタンを配置。`ZStack(alignment: .topTrailing)` に `MapView` とボタンを重ね、`import MapKit`。座標変換（`CLLocationCoordinate2D`）や `CLLocation` 生成用の `convenience init` を用意し、`MKMapItem` を使った地図起動の下準備を実装
+- ビルド／プレビューの不具合対応。macOS 側のスター画像アセット不足を追加して解消。自作型に起因する `magnitude` 関連のビルドエラーを修正。Xcode のプレビューエラーは `Editor ＞ Canvas ＞ Enable Legacy Preview Execution` の有効化で回避
+- 条件付きコンパイルで UI を整理。`#if !os(macOS)` で macOS 以外にのみ `Your Favorites Only` のバインディングを渡す。プレビューも `#if os(macOS)` とそれ以外で分岐
+- 開発運用の補助。`Command-Shift-O` で同名ファイルのプラットフォーム差を確認しつつ素早く移動
+
+本動画は、チュートリアルの手順を追いながら実際にコードを動かし、問題点を確認・調整していく過程を記録したものです。技術解説の決定版ではなく、読み進めながらの学習内容が中心です。

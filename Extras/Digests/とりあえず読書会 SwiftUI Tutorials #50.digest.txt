@@ -1,0 +1,17 @@
+■ ダイジェスト
+
+この動画は、完成した SwiftUI チュートリアルのコードを読み進めながらリファクタリングしていく様子を記録した回です。`LandmarkDetail`（watchOS）、`LandmarkList`、`LandmarkRow` を中心に、命名と構造をそろえつつ、選択やフィルタ、長押しメニューなどの挙動を確認しながら整理しました。以下は動画内で具体的に着目した技術的なポイントです。
+- `LandmarkDetail`（watchOS）を、他 OS と命名を合わせる形で再構成。`@ViewBuilder` と `private extension` を用い、`contentArea` と `mapArea` を `Divider` で区切る構成に整理。上部は「サマリーエリア」として、`imageArea`、`titleArea`（`landmark.name` と `isFavorite`）、`subtitleArea`（`landmark.park` と `landmark.state`）を分離。
+- `@Binding` のアクセス制御は `private(set)` 方針を試行。`@State` とのバランスを見つつ運用確認。
+- `LandmarkList` の状態管理とフィルタ更新。`selectedLandmarkID: Int?`、`displayingLandmarkIDs: [Int]` を用い、`updateLandmarkList` では `landmarks.lazy`＋`filter`＋`map`→`Array(...)` で無駄な走査を抑制。フィルタ変更時は `onChange` で `updateLandmarkList` を実行し、アニメーションを適用。
+- 選択とナビゲーション。`NavigationSplitView` の `selection` に `selectedLandmarkID` を関連付け。watchOS では長押しがタップ選択と競合するため、`contextMenu` で長押しメニューを出しつつ、行タップは `onTapGesture` で `selectedLandmarkID` を更新する形に分離。`#if os(watchOS)` でタップ処理を条件付きに。
+- 行ビューの切り出し。`ForEach` の中身を `listRow` に分離し、`Binding＜Landmark＞` を受け取って `some View` を返す形に整理。`ForEach` 側はシンプルにランドマークを回して `listRow` に渡す方針へ。
+- フォーカス値の利用。`.focusedValue` に `selectedLandmark` を渡して、お気に入り操作が選択中のランドマークに反映されることを macOS で動作確認。
+- `LandmarkRow` の UI 分割。`HStack` 内を `imageArea` と `contentArea` に分け、`@ViewBuilder` で読みやすく整理。
+- 使われなくなったコード（例: `defaultFilter`、デバッグ `print`）の削除と、Xcode のブックマークで「後で消す予定の変更点」をメモしておく運用を紹介。
+
+言及のみの事項（掘り下げはせずに触れた話題）
+- Xcode プレビューやスキームの切り替えの不調への対処。
+- オプショナルに対する `map`／`flatMap` 的な書き方への言及はあったが、最終的には `guard`／`if let` を用いた読みやすい記述を採用。
+
+技術解説というより、チュートリアルコードを題材に命名や責務分割、状態管理、プラットフォーム差分の扱いを試行錯誤しながら整えていく回です。コードやシンボルは動画内と同様に `@ViewBuilder`、`private(set)`、`NavigationSplitView`、`contextMenu`、`onTapGesture`、`onChange`、`Binding＜Landmark＞`、`some View`、`Divider`、`focusedValue` などを扱っています。

@@ -1,0 +1,30 @@
+■ ダイジェスト
+
+この動画は、Apple の SwiftUI Tutorials の 「Animating Views and Transitions」 を読み進める様子の記録です。実装を試しながら、どんなアニメーションやトランジションが使えるのかを確認しました。技術解説というより、チュートリアルを追いかけて学習していく内容です。
+
+主に着目して読んだ・試したこと
+- データ導入とモデル定義
+  - リソースに `HikeData.json` を追加し、モデル `Hike`（`Codable`、`Hashable`、`Identifiable`、学習の文脈で `Sendable` も検討）とネスト型 `Hike.Observation`（`Codable`、`Hashable`、`Sendable`、計算プロパティ `distanceFromStart`）を用意。
+  - `import Foundation` の抜けやファイル認識の不具合を確認しつつ修正。`LengthFormatter` が Non‑Sendable な点に対し、`@MainActor static let` でフォーマッタを保持し、`distanceText` をメインアクターに寄せる方針を試行。
+  - モデル読み込みは `typealias Hikes = [Hike]`、`let hikes: Hikes = load("hikeData.json", as: Hikes.self)` の形でバンドルからロード。
+- ビューの取り込みとプレビュー
+  - `GraphCapsule`、`HikeDetail`、`HikeGraph`、`HikeView` を追加し、ライブプレビューで表示の切替やパディングを確認。
+- ビュー単位のアニメーション
+  - `HikeView` で `animation(.easeInOut, value: showDetail)` を適用し、状態 `showDetail` の変化でアニメーションする挙動を確認。
+  - `scaleEffect` を状態で切替えて拡大縮小を付与。回転は `animation(nil)` で無効化し、スケールの動きに集中。
+  - 一度アニメーションを外して挙動の違いを比較。
+- アニメーションのトリガと割り込み
+  - トグルは `withAnimation { showDetail.toggle() }` に変更。`withAnimation(.easeInOut(duration: 4))` で 4 秒に遅くし、割り込み可能性や中断時の自然な遷移を観察。のちにデフォルトに戻す。
+- トランジションのカスタマイズ
+  - 条件表示に `transition(.slide)` を適用。
+  - `AnyTransition` を `extension` し、`moveAndFade` のような再利用可能なトランジションに抽出。
+  - 方向をそろえるため `move(edge: .trailing)` を使用。
+  - 非対称トランジション `transition(.asymmetric(insertion: .move(edge: .trailing).combined(with: .opacity), removal: .scale.combined(with: .opacity)))` を適用し、表示と非表示で異なる動きを学習。
+- アニメーションの構成（グラフのリップル）
+  - `HikeGraph`／`GraphCapsule` に、スプリング `animation(.spring(dampingFraction: 0.5))` をベースに、インデックスに応じた `delay` を連結してリップル効果を付与（必要に応じて `.speed(...)` で速度調整）。
+  - データセット切替（`Elevation`、`Heart Rate`、`Pace`）でバーが波紋のように動くことを確認。
+- チューニングのポイント
+  - 特定の変更をアニメーションさせない場合は `animation(nil)` を使用。
+  - キャンバスへのピン留めやスローモーションで、タイミングや割り込み時の挙動を観察しながら調整。
+
+本動画では、上記のようにコードを直接いじりつつ、`animation(_:value:)`、`withAnimation`、`transition`、`AnyTransition`、`spring`、`delay` などを実際に当てはめて、挙動を確認していく学習プロセスを記録しています。

@@ -1,0 +1,15 @@
+■ ダイジェスト
+
+技術書を読んでいく様子を録画しています。今回は SwiftUI Tutorials を読み進め、プロフィール表示まわりの設計と編集モード導入を中心に、動かしながら学習しました。技術解説ではなく、チュートリアルを読み進めて理解を深めていく内容です。
+
+主に具体的に着目した項目
+- プロフィール表示のトリガー設計: `sheet` の表示条件をトグルではなく、ボタン押下で `showingProfile` に `true` をセットする方式に変更。`sheet`／`fullScreenCover` と環境による適応、`View.presentationCompactAdaptation` の整理。`.sheet(isPresented:)` と `onDismiss`、`content` の役割を確認。
+- ツールバーの共通化: プロフィールボタン用の `ViewModifier` を作成（`struct ProfileToolbar: ViewModifier`、`@Binding var isShowingProfile: Bool`）。`extension View` に `profileToolbar(showingProfile:)` を追加し、`CategoryHome`／`LandmarkList` など複数画面で再利用。
+- 状態の集約と配置: `ContentView` に `@State private var showingProfile = false` を持たせ、各子ビューへ `Binding` を受け渡し。`.sheet(isPresented: $showingProfile, ...)` は `TabView` 直下に配置して、どのタブからでもプロフィールを表示できる構成に。
+- プレビュー対応: `PreviewProvider` で `@State var showingProfile = false` を用意し、`@Binding` を要求するビューへ値を渡してビルドエラーを解消。
+- 編集モードの導入: `ProfileHost` に `@Environment(\.editMode)`（型は `Binding<EditMode?>`）を追加し、`EditButton` を配置。`switch` で `.inactive`／`.active`／`.transient`／`nil` を分岐し、`.inactive` や `nil` は `ProfileSummary`、編集時はエディタ表示という条件付きビューを実装。
+- 将来拡張への備え: `@unknown default` でのフォールバック方針、`assertionFailure` とフォールバックビューの併用案を検討。`ViewBuilder` に `buildExpression(_ expression: Void) -> EmptyView` を追加し、ビルダー内での `assert`／`print` の扱いを工夫する試行。
+- モデル設計の見直し: `ModelData` における `Profile` の扱いを再検討。`ModelData.profile` をオプショナル化し、編集は `draftProfile` にコピーして確定時に反映。アプリ既定の `defaultProfile`（例: `ModelData.defaultProfile`）を用意して未設定時やプレビューで使用。
+- 関連ビューの整理: `ProfileSummary`／編集用ビューの切り替え、`NavigationSplitView`／`TabView`／`toolbar` の配置関係を確認しながら実装を調整。
+
+動画では、これらの項目をコード（`ContentView`／`CategoryHome`／`LandmarkList`／`ProfileHost`／`ProfileToolbar` など）を実際に編集しつつ、設計の意図や SwiftUI の API（`sheet`、`fullScreenCover`、`@State`、`@Binding`、`@Environment`、`EditMode`、`EditButton`、`ViewBuilder`）を確認していきます。

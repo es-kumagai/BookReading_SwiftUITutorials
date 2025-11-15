@@ -1,0 +1,11 @@
+■ ダイジェスト
+
+技術書（Apple の SwiftUI Tutorials）を読み進めながら手を動かして学ぶ様子を記録しています。今回の主題は Landmarks のバッジシンボルづくり（セクション 3）と、回転配置に向けた下準備（セクション 4 の入口）です。具体的に扱った内容は次のとおりです。
+- アセット設定: Asset Catalog の `App Icon` を用意し、`Resources` の PNG を所定スロットへ配置。
+- バッジシンボルの描画: 新規 View `BadgeSymbol` を作成し、`GeometryReader` と `Path` の API でシンボルを構成。`addLine(to:)`、`move(to:)` を使い、上部（冠雪）と下部（植生）のパーツを `topPortion(path:)`、`bottomPortion(path:)` などに分割。`inout Path` を受け取るトレーリングクロージャでパスを組み立てる方針を確認。
+- リファクタリング: `extension BadgeSymbol { struct SymbolPath: View { ... } }` で描画をサブビュー化、または `makePath(in:) -> Path` を切り出してネストを軽減。メトリクスは `init(bounds:)` と計算型プロパティで整理（`width`、`height`、`middle`、`topSize: CGSize` など）。プレビューでは `GeometryReader { geometry in ... }` から `geometry.size` を `bounds` として `BadgeSymbol` に渡す形へ。
+- 塗りの指定: `fill(symbolColor)` でシンボル色を適用。`Color` を拡張して `Color.badgeSymbol` を追加し、さらに `ShapeStyle` への拡張（`where Self == Color`）で `.fill(.badgeSymbol)` と書けるように整理。外部からの変更に備え、`fillStyle` は `Color` ではなく汎用の `ShapeStyle` を受け取る設計に一般化。
+- API 設計の方針: View のプロパティは基本 `let` とし、`bounds` と `fillStyle` を `BadgeSymbol`／`BadgeBackground` に明示的に渡す構成へ。内部メトリクスは意味が伝わる private 名称に見直し（例: `square_size_length`、`bottom_portion_height`、`spacing` など）。
+- 回転シンボルの用意: `RotatedBadgeSymbol` を作成し、`bounds`、`fillStyle`、`angle: Angle` を受け取り回転描画できるように準備。次回は `BadgeBackground` 内へのシンボル配置と回転の適用を進めます。
+
+解説ではなく、チュートリアル本文を読み進めながら検討・実装・リファクタリングしていく流れをそのまま記録しています。

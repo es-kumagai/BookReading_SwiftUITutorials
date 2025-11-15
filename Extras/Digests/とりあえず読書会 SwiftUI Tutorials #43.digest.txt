@@ -1,0 +1,19 @@
+■ ダイジェスト
+
+この動画は、技術書（チュートリアル）を読み進めながら実装を試す記録です。Swift のマクロを用いて `Notification` の `userInfo` に型安全にアクセスする仕組みを設計・実装し、AST をたどる実装や命名規約、展開結果の検証までを学習として進めました。技術解説ではなく、読み進めながらの試行錯誤と着目点の共有が目的です。
+
+主に取り上げて学習した内容
+- `userInfo`（`[String: Any]`）を列挙型の宣言からマクロで展開し、`aps` → `alert` → `title`／`body` といった階層に型安全なアクセサを生成する方針。`enum Alert` などの宣言からアクセスコードを自動生成。
+- SwiftSyntax による訪問処理の実装: `SyntaxVisitor` 準拠のビジターで `EnumDeclSyntax` を走査し、`EnumCaseDeclSyntax` → `EnumCaseElement` → `parameterClause` からケース名とパラメータ型を抽出。`typealias PropertyInfo` を用意し、`compactMap` と `reduce(into:)` で `name` と `type` の配列に集約。
+- 制約の明示: `enum case` はパラメータを 1 つだけ持つ想定とし、`parameters.count == 1` を `guard` で検査し、違反時は `fatalError` を発生させる実装方針。
+- 命名とプレフィックス生成: `node.name.text` を `lowerCamelCase`／`UpperCamelCase` に変換。親の `enum` を `enclosingEnum` で遡って連結し、`APSAlertTitle` のような衝突しにくい識別子を生成。`title` や `dest` などの衝突可能性に対しては親名プレフィックス付与で回避。
+- 実装位置と対象の切り出し: ターゲットは `LandmarksMacroClient`、実装は `LandmarksMacros` 内の `@UserInfoAccessor` 対象。`MemberBlock` から `enum` を特定し、`UserInfo` 直下は生成対象から除外するなどの分岐を整理。
+- 名前空間設計の検討: `enum` ベースに加え、必要に応じて `struct` で名前空間を作る選択肢も検討（展開結果の見通しと衝突回避の観点）。
+- 生成結果の確認と細部調整: 展開コードで `APS`／`APSAlert`／`APSAlertTitle` が期待どおり生成されることを確認。`lowerCamelCase`／`UpperCamelCase` の実装や強制アンラップの扱いなどを調整。マクロ展開時のインデントずれは未解決の課題として認識。
+
+未完了の課題と次回以降の方針
+- `UserInfo` 直下プロパティの生成ロジックを共通化し、過不足なく展開されるようにリファクタリング。
+- ビジターと展開コードの整理、命名まわりの重複処理の解消。
+- マクロ展開時のインデント整形の改善。
+
+読み進めながら実装を試し、動作確認とリファクタリングを繰り返しています。コード例や具体的な API 名は動画内で逐次 `enum`／`case`／`parameterClause`／`enclosingEnum`／`reduce(into:)` などを参照しながら進めています。

@@ -1,0 +1,34 @@
+■ ダイジェスト
+
+SwiftUI Tutorials #14 を読み進めながら、ランドマークをカテゴリ別にブラウズする画面の構成を実装・整理しました。縦リストに横スクロールの行を並べる UI を題材に、データモデルとビューの両面を手を動かして確認しています。
+
+具体的に着目した内容
+- 画面骨子の追加と接続
+  - 新規ビュー `CategoryHome` を作成し、`NavigationSplitView` と `NavigationLink` で詳細表示に接続。ディテール側は暫定で `Text("selectedLandmark")` を配置。
+- データモデルの拡張と型設計
+  - `Landmark` に `category` を追加し、`enum Landmark.Category: String, Codable, Sendable` を導入。`CaseIterable` は一度検討したものの不要と判断して外しました。
+  - `ModelData` でカテゴリ別のグルーピングを実装。`Dictionary(grouping: landmarks, by: \.category)` により `[Category: [Landmark]]` を生成。キーは `Category`（列挙型）で型安全に保持。
+  - カテゴリ一覧の表示用に、`Array(modelData.categories.keys).sorted { $0.rawValue ＜ $1.rawValue }` としてキーを `rawValue` で並べ替え、`List`＋`ForEach`（`id: \.self`）で表示。
+- 環境オブジェクトとリスト表示
+  - `CategoryForm`（補助ビュー）で `@EnvironmentObject var modelData: ModelData` を導入し、`categories` へのアクセスを整理。
+- カテゴリ表示テキストの扱い
+  - `Text("\(category)")` が `LocalizedStringKey` 扱いになる点を確認し、`Text(verbatim:)` や `String(describing:)` の利用、または `extension Text { init(_ category: Landmark.Category) { self = Text(verbatim: category.rawValue) } }` といった方針を検討。
+  - 表示専用の `CategoryView` を用意し、`Landmark.Category` を受けて `Text` に変換して表示する案で統一感を持たせました。
+- カテゴリ行（横スクロール）の構築とリファクタリング
+  - `CategoryRow` を作成し、`ScrollView(.horizontal)`＋`HStack` で対象カテゴリの `Landmark` を横並び表示。
+  - アイテム表示用の `CategoryItem` を導入後、`LandmarkCell` に改名・内包化して `private` にし、`CategoryRow` 内で完結する構成に整理。
+  - レイアウトは `VStack(alignment: .leading)` と `padding` で調整。`GeometryReader` は避けました。
+  - プレビューでは `prefix(4)` や `filter` の組み合わせで、カテゴリに合致する要素のみを渡して確認。
+- 整合性チェックの検討と方針決定
+  - `extension Collection where Element == Landmark` で「同一カテゴリか」を判定し、`CategoryRow` の初期化で `fatalError` による整合性チェックを試行。
+  - 最終的には、呼び出し側で `filter` 済みの `landmarks` と対応する `category` を渡す方針に調整し、運用をシンプル化。
+- ビルドとファイル構成に関する確認
+  - Xcode の同名ファイル／リソース重複で発生する「Multiple commands produce …」エラーを確認し、命名衝突の回避策（ファイル名の変更や `Landmark.Category` のようなネストによる名前空間の活用）を整理。
+  - `Coordinates` 型の配置やファイル名の整理方針を検討。
+
+言及のみ（深掘りは未実施）
+- `Objective-C` の Category（用語としての言及）
+- `Comparable` 採用の是非（最終的には `rawValue` 基準のソートで対応）
+- `CaseIterable` の一般的な用途（今回は不採用）
+
+チュートリアルを読み進めながら、カテゴリ別ブラウズ画面のデータ整形（`Dictionary(grouping:by:)`、キーのソート、`@EnvironmentObject`）から、UI の組み立て（`CategoryRow`、`LandmarkCell`、`ScrollView(.horizontal)`）までを実装し、表示方法や設計上の判断を逐次確認しています。

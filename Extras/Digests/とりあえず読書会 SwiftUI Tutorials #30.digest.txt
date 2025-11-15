@@ -1,0 +1,16 @@
+■ ダイジェスト
+
+本動画は、SwiftUI Tutorials を読み進めながら実装を追従していく読書会の録画です。今回は Apple Watch 向けターゲットの追加と watchOS 対応のリファクタリングを進め、チュートリアル相当の範囲を学習しながら実装の整理と動作確認を行いました。技術解説というより、読み進めながら手を動かして学んだ内容の記録です。
+
+主な学習トピック（具体的に扱った内容）
+- Apple Watch 向けに `LandmarkList` のプロフィールツールバーを条件付きで非表示化（`#if os(watchOS)` での分岐、`toolbar` の適用制御）
+- 長押しによるメニュー表示の検討と試作（`onLongPressGesture`＋`confirmationDialog`／`Menu`）。Force Touch 廃止を踏まえつつ試すも、`List` のタップと競合したため一旦無効化
+- watchOS のプロフィール表示を `@State` の `showingProfile` と `sheet` で実装し、`.constant(false)` を解消。編集 UI は使わず `ProfileSummary` のみを使用
+- `@Environment` の `ModelData` を用いたプロフィール受け渡しと、デフォルト適用ロジックの共通化（`ModelData.effectiveProfile`）
+- バッジ関連と `BadgeSymbol`、アニメーション（例: `AnyTransition.moveAndFade`、`RippleStyle`）のターゲット設定とビルド対応
+- `HikeGraph` を共通化し、`HikeView` は iOS／watchOS で分割。watchOS 版は UI を簡素化し、ボタン群を `typealias Stack = VStack`（iOS は `HStack`）でレイアウト
+- ファイルとターゲットの整理（`FeatureCard`・`PageView` は iOS、通知関連は watchOS、共有コンポーネントは共通化）
+- `LandmarkList` の OS 分岐と、watchOS 向けメニューの `ViewModifier` 抽出方針の確認
+- フィルタ「お気に入りのみ」の動作確認（`Favorites only` トグル）
+
+本動画は、チュートリアルのコードをベースに、OS ごとの分岐や共通化の設計を試行錯誤しながら整理していく過程を記録しています。コード記法は、`onLongPressGesture`、`confirmationDialog`、`Menu`、`sheet`、`@State`、`@Environment`、`#if os(watchOS)`、`VStack`／`HStack` などを扱っています。

@@ -1,0 +1,13 @@
+■ ダイジェスト
+
+技術書を読んでいく様子を録画しています。今回は Apple の SwiftUI Tutorials の「Creating a watchOS App」を読み進め、iOS の Landmarks を watchOS に展開する手順を学びました。チュートリアルに沿って、既存コードとリソースの共有、watchOS 向けの最小限のカスタマイズ、プレビューと UI 調整、ナビゲーションの追加までを進めています。
+
+- Xcode で `File ＞ New ＞ Target…` から `watchOS` の `App` を追加し、プロダクト名を `WatchLandmarks`、`watchOS App for an Existing iOS App` を選択、`WatchLandmarks Watch App` スキームをアクティベートしました。`Run without iOS App Installation` を有効化し、シミュレーターは Apple Watch の 45mm デバイスを選択しました。
+- 自動生成された watchOS 側のエントリーポイントを削除し、iOS と共通の `LandmarkApp`（エントリーポイント）を共有しました。`Target Membership` で `LandmarkList`、`LandmarkRow`、`CircleImage`、`MapView` などのビューと、`ModelData`、`Landmark`、`Hike`、`Profile` の各モデル、`LandmarkData.json`、`HikeData.json`、アセットを watchOS ターゲットに追加しました。watchOS の App Icon も割り当てました。
+- ビルド対応として、`Hike` 周辺の `Observation` を共有に追加し、`Range<Double>` の拡張（`extension Range where Bound == Double { var magnitude: Double { upperBound - lowerBound } }`）を共有、`StarImage` や `FavoriteButton`、ビルドに必要な `LandmarkDetail` を取り込みました。同名型の競合を避けるため、watchOS 用の `LandmarkDetail` は watch 専用ファイルとして用意しました。
+- プレビューは Apple Watch の Large／Small 両サイズを用意し、`let modelData = ModelData()` として `.environmentObject(modelData)` を渡して確認しました。
+- watchOS のディテール画面では、`CircleImage` に対して `Image` 側で `.resizable()` と `.scaledToFit()` を適用する方針で調整しました。`ScrollView` 内に `VStack` を組み、`CircleImage`、`Text`、`Toggle`、`Divider`、`MapView`（`landmark.coordinate` を渡す）を配置してレイアウトを整えました。
+- ナビゲーションとして `NavigationStack` と `navigationTitle` を追加し、`navigationBarTitleDisplayMode(.inline)` を指定して表示を調整しました。
+- プロジェクト整理として、共有コード／リソースを `Common` グループへ集約し、`Assets` と `Resources` を分離して App Icon と汎用画像を混在させないようにしました。iOS／watchOS の各スキーム名も区別できるようにしました（例: `Landmarks for iOS`、`Landmarks for watchOS`）。
+
+次回は、今回の変更を踏まえたリファクタリングと、watchOS 向けのランドマークリスト追加を進める予定です。

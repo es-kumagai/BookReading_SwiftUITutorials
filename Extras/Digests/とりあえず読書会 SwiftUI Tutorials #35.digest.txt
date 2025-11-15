@@ -1,0 +1,15 @@
+■ ダイジェスト
+
+SwiftUI のチュートリアル「Creating a macOS App」 セクション 4 を読み進め、ランドマークリストのカテゴリーフィルター設計と表示まわりを中心にリファクタリングしました。実装詳細に踏み込みつつも、読んで理解しながら進めています。
+
+主に着目した技術的ポイント
+- フィルター設計の見直し: これまでの `Lakes` / `Rivers` / `Mountains` と `All` を `rawValue` で突き合わせていた実装をやめ、`enum` を 列挙子 ` .all ` と ` .specific(Category) ` に再設計。`Category` はアプリ全体の型として切り出し、文字列依存を排して列挙子同士の等価比較で判定。
+- 列挙の整備: `FilterCategory`（最終的に `FilterCategories`）に `CaseIterable` を実装。`static var allCases` を ` [ .all ] + Category.allCases.map { .specific($0) } ` の方針で自前合成。扱いやすさのため `Identifiable` / `Hashable` も付与。
+- `ForEach`／`Picker` の要件対応: `ForEach` における識別子指定（例 ` id: \.self `）と `Identifiable` 化でビルドエラーを解消。`Picker` の `selection` と `allCases` の型整合を確認。
+- 表示テキストの一元化: `Category` と `FilterCategory` を `CustomStringConvertible` 準拠にし、`String(describing:)` で安全に文字列化。`Text` は `String` を明示的に渡す（例 ` Text(verbatim:) `）。広範囲に影響する汎用拡張は避け、限定的な `Text` 初期化子を `private extension` として導入。
+- タイトル生成の整理: `navigationTitle` 用の文字列を、`categories`（` .all `／` .specific(Category) `）と `showFavoritesOnly` の組み合わせで構築。`rawValue` ではなく `description` ベースに統一。
+- フィルター判定の集約: フィルター側に ` func matches(_ landmark: Landmark) -＞ Bool ` を実装し、`favoritesOnly` とカテゴリー一致の 2 条件を素直に評価。呼び出し側の責務を「表示用 ID の更新」に集中。
+- マルチプラットフォーム対応の整理: `#if os(iOS) || os(macOS)` で UI 専用コードを限定。ツールバーは `@ToolbarContentBuilder` と `some ToolbarContent` を用いた `platformToolbar`（` .toolbar { platformToolbar() } `）に分離。条件付きで評価式を分け、プラットフォームごとの分岐を明確化。
+- 既存コードのクリーンアップ: 不要になった `onChange` の削除、`minWidth` など表示調整の定数化検討。`FilterCategories` を `Identifiable` / `CaseIterable` / `CustomStringConvertible` に揃え、`Text` 表示と列挙が一貫して機能することを確認。
+
+読み進めた範囲: 「Creating a macOS App」 セクション 4 を完了。次回は macOS の「Built-in Menu Commands」 セクション 5 に進む予定です。

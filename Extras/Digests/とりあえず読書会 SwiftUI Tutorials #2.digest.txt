@@ -1,0 +1,12 @@
+■ ダイジェスト
+
+本動画は、Apple の SwiftUI Tutorials 1 章「Building Lists and Navigation」を、技術書を読み進めながら実装していく記録です。ランドマーク一覧と詳細画面へ進むための土台として、モデル層とデータ読み込み周りを中心に手を動かしました。
+
+具体的に着目した内容
+- データの準備と取り込み：リソースの `landmarkData.json` を Xcode プロジェクトへ追加し、ターゲット設定や `File Inspector` の `Target Membership` を確認。
+- モデルの定義：`struct Landmark` を作成し、`id`、`name`、`park`、`state`、`description` を追加。`Codable`／`Hashable` 準拠の意味と自動合成の挙動を確認。`description` というプロパティ名が `CustomStringConvertible` と紛らわしい点にも触れつつ、JSON と同名にしてマッピングを簡潔に保つ方針を採用。
+- 画像アセットの扱い：`Assets.xcassets` に画像をドラッグ＆ドロップで登録。モデル側に `private var imageName: String` と、アセットから読み込む計算型プロパティ `var image: Image { Image(imageName) }` を用意し、内部表現の隠蔽と `SwiftUI` の `Image` 提供を両立。
+- 座標のモデリング：`Landmark` にネストした `struct Coordinate: Hashable, Codable`（`latitude`／`longitude` は `Double`）を導入し、名前空間で「ランドマークの座標」であることを明確化。`CoreLocation` を `import` して、`CLLocationCoordinate2D` への変換用に `extension CLLocationCoordinate2D { init(_ location: Landmark.Coordinate) { self.init(latitude: location.latitude, longitude: location.longitude) } }` を実装。API デザインガイドラインに沿った `init(_:)` による値保持型変換の書式を確認。
+- データ読み込みユーティリティ：`ModelData.swift` にて、`Bundle.main` 配下のリソースを読み取り `JSONDecoder` で `Decodable` 型にデコードする汎用 `load` を作成。`url(forResource:withExtension:)`、`Data(contentsOf:)`、`JSONDecoder().decode(T.self, from: ...)` の流れ、`guard`／`do-catch`／`fatalError` によるエラーハンドリング、フリー関数より型所属（`extension Bundle`）に寄せる設計や引数ラベルの付け方など API デザイン観点を検討。
+
+本章の目的である「リストとナビゲーション」の実装に向け、モデル、画像、座標、データローダの基盤を整えました。続きでは、このモデルを用いて動的なリスト表示とタップ遷移の実装に進みます。

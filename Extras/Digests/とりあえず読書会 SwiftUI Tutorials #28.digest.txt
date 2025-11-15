@@ -1,0 +1,15 @@
+■ ダイジェスト
+
+技術書（Apple 公式の SwiftUI Tutorials）を読み進めながら、watchOS の通知対応コードをリファクタリングした様子を記録した回です。主に APNs ペイロードの取り扱い、通知コントローラとビューの責務分離、ID ベースのモデル参照、型安全な `userInfo` アクセスの整備に着目して進めました。
+
+本編で具体的に扱った技術的なトピック
+- APNs ペイロードの基本形の確認と実機テスト: `aps.alert.title`／`aps.alert.body` を用意し、シミュレーターに通知を注入してタイトル先頭に `!` を付けた加工表示を確認。アプリがフォアグラウンドだと通知が出ない点も動作確認しました。
+- インデックスから ID へ移行: `landmarkIndex` を `landmarkID` に変更し、通知からの参照を安定化。`NotificationController` 側のキーも `landmarkIDKey` に統一しました。
+- ID ベースのモデル検索ユーティリティ: `extension Sequence where Element: Identifiable, Element.ID: Hashable { func element(id: Element.ID) -＞ Element? { first { $0.id == id } } }` を追加し、`modelData.landmarks.element(id: ...)` で取得できるようにしました。
+- 型安全なペイロードラッパ: `UNNotificationContent.userInfo`（`[AnyHashable: Any]`）を直接触らず、`NotificationPayload`（`init?(from:)`、`title`／`message`／`landmarkID` を提供）でラップして、キー文字列の露出を内部に閉じ込めました。
+- 表示側の責務整理とオプショナル最小化: `NotificationView` は `title`／`message` を必須、`image` をオプショナルで受け取る設計に。`NotificationController` では `didReceive` 前提で `title`／`message` を `String!` として保持し、表示直前で値を確定させました。
+- フォールバック文言の決定ルール: 取得状況に応じて `title`／`message` を補完し、両方欠落時も最小限の文言で表示が成立するように整理しました。
+- 一貫性チェックと安全側の挙動: サーバからの `landmarkID` を信頼し、ローカルモデルで画像のみ補助。`title` とモデルの `name` が不一致、ID でモデルが引けない等は `assertionFailure(...)` を発火しつつ、`image` は `nil`（非表示）でフェイルセーフにしました。
+- ヘルパ関数の切り出し: `makeTitleAndMessage(with content: UNNotificationContent) -＞ (title: String, message: String)` と `makeLandmarkImage(with content: UNNotificationContent) -＞ LandmarkImage?` を定義し、`nil` を外側に漏らさない形で値確定と画像生成を分担しました。
+- ライフサイクルの確認: `didReceive` の後に `NotificationView.init` が走る順序を `print` で検証し、前提どおりであることを確認しました。
+- 残課題: モデルデータの共有と一元管理に関する `FIXME` を明示（現状はローカル生成が混在）。今後の見直し対象として保留しました。

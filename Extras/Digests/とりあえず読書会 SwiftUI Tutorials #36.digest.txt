@@ -1,0 +1,28 @@
+■ ダイジェスト
+
+この動画では、技術書（チュートリアル）を読み進める様子を録画し、SwiftUI Tutorials の「Creating a macOS App」を題材に、セクション 5〜6 でメニューコマンドの追加を学習しています。ビルトインとカスタム双方のコマンドを扱い、実装しながら動作確認とエラー修正を行いました。
+
+具体的に扱った内容
+- ビルトインコマンドの導入
+  - `Commands` に準拠した `LandmarksCommands` を作成し、`Scene` に `commands { LandmarksCommands() }` で追加しました。
+  - `SidebarCommands` を `body` に組み込み、`View ＞ Show Sidebar` からサイドバーをトグルできることを確認しました。
+  - プラットフォーム条件を整理し、`watchOS` では `.commands` を除外、`iOS`／`macOS` で有効化しました。
+- フォーカスとバインディング
+  - `FocusedValues` にカスタムキー `SelectedLandmarkKey` を定義し、`Binding＜Landmark?＞` を扱えるように拡張しました。
+  - `@FocusedBinding var selectedLandmark` を導入し、現在選択中のランドマークをメニュー側から参照・更新できる下準備を行いました。
+- カスタムコマンドメニュー
+  - `CommandMenu("Landmark")` を追加し、`Button` でお気に入りのトグルを実装しました。
+  - アクションは `selectedLandmark?.isFavorite.toggle()`、ラベルは `selectedLandmark?.isFavorite == true ? "Remove Favorite" : "Mark as Favorite"` とし、選択がない場合は `.disabled(selectedLandmark == nil)` としました。
+  - キーボードショートカットは `.keyboardShortcut("F", modifiers: [.shift, .option])` を付与し、メニュー表示に自動反映されることを確認しました。
+- リスト選択との連携とデータ参照
+  - `NavigationSplitView` に `focusedValue` モディファイアを適用し、`@Bindable var modelData` から `modelData.landmarks` のバインディングを提供しました。
+  - 選択状態は `selection` と `tag`（`NavigationLink(tag:selection:...)`）の組み合わせでドライブする方針を確認しました。
+  - モデルから要素を引くために `element(byID:)`（または相当のサブスクリプト）を検討し、未検出時は番兵値 `0` ではなく `nil` を扱う設計に寄せました。
+  - `Optional` の合成で二重オプショナルにならないように、`map`／`flatMap` の使い分けで `Binding＜Landmark?＞` に落とし込む点を確認しました。
+- 動作確認と修正
+  - 選択がないときのメニュー無効化、フィルター（「Favorites only」）との組み合わせ時の挙動を確認しました。
+  - コード上の不具合（`disable` ➝ `.disabled`、括弧やスコープのずれ、イミュータブルな値への `toggle()` など）を都度修正しました。
+
+言及のみ（深掘りはしていません）
+- 標準メニュー項目（About、Services、File の新規ウインドウ、Edit のコピーなど）の存在確認。
+- ショートカット表示がメニューに自動反映される点や、修飾キー指定で用いる `OptionSet` の話題。

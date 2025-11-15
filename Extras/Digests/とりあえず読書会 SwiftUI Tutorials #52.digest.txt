@@ -1,0 +1,32 @@
+■ ダイジェスト
+
+本動画は Apple の SwiftUI Tutorials を読み進めながら、ページング UI とプロフィール関連の章のコードをリファクタリングし、設計の前提や API の使い方を整理していく様子を記録したものです。技術解説ではなく、読み進めつつ確認・修正した具体点をまとめます。
+
+- 具体的に着目した事柄
+  - ページ番号設計と配列管理
+    - インデックス 0 始まりと人間の 1 始まりの混同を避けるために、`Int` をそのまま使わずページ番号用の型を導入。`pages` は配列で順序を保持。
+  - 空配列対策と表示制御
+    - `PageView`／`PageViewController` は「1 ページ以上」を前提。呼び出し側で `featureCards.isEmpty` をチェックし、空なら `PageView` を出さない方針へ。タイトル切替のためにフラグ `hasFeatureCards` を導入し、`if hasFeatureCards { ... }` で `FeatureCards` 表示、なければ `Landmarks`。
+  - 前提条件チェック
+    - `PageViewController` 初期化時に `precondition` でページ数が 1 以上であること、`makeCoordinator()` で `currentPageNumber` が `pageNumberRange` に含まれることを検証。
+  - SwiftUI と UIKit のブリッジ
+    - `UIViewControllerRepresentable` 準拠の `PageViewController` を実装し、`makeUIViewController`／`updateUIViewController` と `Coordinator`（`UIPageViewControllerDataSource`／`UIPageViewControllerDelegate`）でページ遷移と `currentPageNumber` を連携。
+    - 遷移完了時は `pageViewController(_:didFinishAnimating:previousViewControllers:transitionCompleted:)` で `currentPageNumber` を更新。可視コントローラ取得失敗はロジックエラーとして扱う。
+  - ページ計算ロジックと言葉の使い分け
+    - `pageNumberRange` は終端非包含。`indexFromPageNumber` と `pageNumberFromIndex` を対応付け、`startIndex`／`endIndex` と 1 始まりのページ番号の整合を確認。
+    - 用語は `last`（最後の要素）と `end`（終端マーカー）を明確に区別。
+  - アクセス制御とスレッド
+    - `private`／`fileprivate`／`private(set)` の整理、`Coordinator` は `final class` ＋ `@MainActor`。型エイリアスやプロパティの公開範囲を必要最小限に。
+  - UI 細部の明確化
+    - `pages.count * 18` を `pageControlWidth` に切り出し。幅は `Double` で保持し、表示側へは `CGFloat` に暗黙変換。意図が読み取りやすい命名に。
+  - `ProfileEditor` の行単位コンポーネント化
+    - `@ViewBuilder` で `UserNameRow`／`EnableNotificationsRow`／`SeasonalPhotosRow`／`GoalDateRow` を抽出。`SeasonalPhotosRow` は `Season.allCases` を `ForEach`。
+    - `DatePicker` の範囲 `goalDateRange` は `Calendar.current.date(byAdding:)` で －1 年〜＋1 年を計算。
+    - バインディングや `@State private`、`private(set)` の付与を整理。
+  - `ProfileHost` の構造整理
+    - `presentProfile` を `get`／`set` 付きプロパティで定義し、編集中と確定済みを切り替え。`Buttons`／`completedBatchesArea`／`recentBatchesArea` を `@ViewBuilder` で分離。`onAppear` で `pendingProfile` を反映。`EditMode` と `@State private` の扱いを確認。
+  - `ProfileSummary` の簡素化
+    - `ViewBuilder` を活用し、不要な `Group` を排除。`some View` で返してインデントを浅く保つ。
+
+- 単に言及のみ（深掘りはせず）
+  - `LandmarkApp`、`ModelData`、`ContentView`、`CategoryHome`、`LandmarkList`、プレビューのビルドエラーの発生と解消の確認、`Binding＜Landmark＞` などの型の所在確認。

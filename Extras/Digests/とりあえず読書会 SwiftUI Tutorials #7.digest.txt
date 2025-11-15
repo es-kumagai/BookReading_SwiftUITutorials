@@ -1,0 +1,16 @@
+■ ダイジェスト
+
+この動画は、技術書を読み進める様子を記録したものです。Apple の SwiftUI Tutorials を題材に、ステップ 7 相当の「お気に入り機能」を読み進めながら実装と挙動を確認しました。以下は動画内で具体的に着目した技術的内容です。
+
+- 再利用可能な `FavoriteButton` を作成し、`@Binding var isSet: Bool` を介して状態をトグル（`isSet.toggle()`）。`Label("Favorite", systemImage: isSet ? "star.fill" : "star")`、`.labelStyle(.iconOnly)`、`foregroundStyle(isSet ? .yellow : .gray)` の組み合わせで表示を検証
+- アクセシビリティに配慮し、ボタンに `accessibilityLabel("Toggle Favorite")` を付与。画像単体の場合は `accessibilityLabel` を付けないとシステム画像名が VoiceOver に読み上げられる点を確認（`accessibilityAddTraits(.isButton)` は今回は見送り）
+- `StarImage` ビューを試作し、`isActive` に応じて `systemImageName`（`star.fill`／`star`）と色（`Color.yellow`／`Color.gray`）を切り替え。`static let active`／`inactive` を用意して 2 パターンを簡便に再利用
+- モデル連携は `@EnvironmentObject` な `ModelData` を前提に、`firstIndex(where: { $0.id == landmark.id })` で `landmarkIndex` を取得し、`FavoriteButton(isSet: $modelData.landmarks[index].isFavorite)` のようにバインド。`self` の省略、強制アンラップの是非（オプショナルでの安全性）や `private(set)` による書き込み不可といったアクセス制御・ミュータビリティの論点を整理
+- フィルターとバインディングの整合性を検証。`favoriteOnly` で `filteredLandmarks` を使うと表示更新が追従しないケースを確認し、元配列 `modelData.landmarks` から `id` でインデックスを再取得して、`Binding(get:set:)` で明示的に `$modelData.landmarks[index]`（あるいは `isFavorite`）へのバインディングを生成する方針で解決
+- `@Bindable` の導入も試行したが、本件では更新の伝播が期待どおりにならず、明示的な `Binding(get:set:)` へ戻して動作を確認
+- UI 構成では `HStack` にタイトルと `FavoriteButton` を配置し、`Preview` では `.constant(true)` を用いて暫定確認。プレビューや実行環境には `.environmentObject(ModelData())` を注入
+- フォルダ整理として Views 配下に `Landmarks` と `Controls` を設け、`CircleImage`、`MapView`、`FavoriteButton` などを移動
+- タイプチェック負荷対策として、`Toggle` を内包する `FilterBar` を分離（`struct FilterBar: View { @Binding var showFavoritesOnly: Bool ... }`）
+- 動作メモとして、「`Favorites only` 有効時、単純な `Binding` ではモデルは更新されても表示が更新されないケースがあり、`Binding(get:set:)` による明示的バインディングで解消する」旨を記録
+
+次回は Drawing Paths and Shapes（パスや図形描画）へ進む予定です。

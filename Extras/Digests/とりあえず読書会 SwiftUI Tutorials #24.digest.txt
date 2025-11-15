@@ -1,0 +1,28 @@
+■ ダイジェスト
+
+技術書を読んでいく様子を録画しています。今回は SwiftUI Tutorials の セクション 3 の問題解消と、セクション 4「カスタムページコントロールを追加する」を読み進め、SwiftUI と UIKit の連携とバインディング設計を中心に学習しました。
+
+主に着目した内容
+- SwiftUI と UIKit の連携設計
+  - SwiftUI の `UIViewControllerRepresentable`／`UIViewRepresentable` を使い、`makeUIViewController`／`updateUIViewController`、`makeUIView`／`updateUIView` のライフサイクルを確認しました。
+  - `makeCoordinator` で生成した `Coordinator` は継続利用される一方で、SwiftUI の View は再生成されるため、状態の持ち方を見直しました。
+  - `@Binding` を `Coordinator` に直接保持すると古い参照を握り続ける問題が起きるため、`Coordinator` にオーナーとしての `self` を持たせ、`updateUIViewController` のたびに `context.coordinator.owner = self` で最新のオーナーに差し替える方針にしました。
+- `UIPageControl` の SwiftUI 包装とイベント連携
+  - `UIViewRepresentable` で `UIPageControl` を実装し、`numberOfPages` と `@Binding` の `currentPage` を扱いました。
+  - `Coordinator` を作成し、`addTarget(_:action:for:)` で `valueChanged` にハンドラ（`@objc` メソッド）を接続、オーナーの `currentPageNumber` を更新する流れを実装しました。
+  - ページ番号は `UIPageControl` が 0 始まり、アプリ側は 1 始まりのため、`PageNumber` 型に `init(offset:)` を用意し、`currentPage` と `currentPageNumber` の相互変換を整理しました。
+- レイアウトと画面構成
+  - `VStack` から `ZStack` に変更して `PageView` の上に `UIPageControl` をオーバーレイ配置しました。
+  - `FeaturedCard` とランドマークの関係を整理し、`FeaturedCard(landmark: ...)` に統一。`CategoryHome` に組み込み、`List` の見た目は `listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))` で調整しました。
+- デリゲート／データソースの受け渡し
+  - `makeUIViewController(context:)` で作成した `UIPageViewController` へ `context.coordinator` を `delegate`／`dataSource` に設定する手順を確認しました。
+
+観察できた挙動
+- スワイプ操作は正常に動作しました。
+- `UIPageControl` のタップは基本的に隣ページへ 1 ステップ移動します。連続タップで順送りされ、まれにタップが無視されるように見えるケースがありました。
+
+名称のみ触れた項目（掘り下げなし）
+- `DynamicProperty` と `update()` は検討の上、今回の連携検出には採用しませんでした。
+- `dismantleUIViewController`、レイヤードオプション、`UIViewControllerRepresentableContext`、`Body` などは名前を確認したのみです。
+
+本動画は、技術解説というより、チュートリアルを読み進めながら試行錯誤で設計を固めていく記録です。特に `Coordinator` にオーナーとしての `self` を渡し、`updateUIViewController` で最新化するパターンと、`UIPageControl` の 0 始まりとアプリ側の 1 始まりを `PageNumber` で橋渡しする実装に重点を置いて学びました。

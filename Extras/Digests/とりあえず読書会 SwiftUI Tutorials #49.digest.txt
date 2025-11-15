@@ -1,0 +1,13 @@
+■ ダイジェスト
+
+技術書（Apple の SwiftUI チュートリアル）を読み進めながら、実際のコードをリファクタリングしていく様子を記録した回です。対象は Landmarks サンプルのビュー `LandmarkDetail` で、読み進めた内容に基づき、構造分解とレイアウト調整、データの受け渡し方針を検討・実装しています。
+
+主に扱った技術的なポイント
+- 構造分割と見通しの改善: `extension` で `struct Content: View` を追加し、`LandmarkDetail` を「マップ」「サークルイメージ」「コンテンツ」に分割。コンテンツ内を `Title`（名前＋`FavoriteButton`）と `Description`（説明文）に分け、さらに `Title` を `header`／`subheader` で整理。`Divider` の挿入位置も明確化。
+- データの受け渡しの見極め: 状態更新が必要な箇所は `@Binding`（例: `FavoriteButton` が `landmark.isFavorite` を更新）、読み取りのみの箇所は `let` 受け取り。アクセス制御は `private(set)` の方針を確認しつつ整理。
+- ビューの表現方法の使い分け: 再利用よりもコンテキスト依存が強い小さな塊はプロパティで `some View` を返す形に、更新や独立性が要る部分は `struct` として切り出す基準を検討。
+- レイアウト調整: `ScrollView`／`VStack`／`ZStack` の役割を見直し、`ZStack` 上の配置で `Alignment(horizontal: .leading, vertical: .top)` を指定。`CircleImage` を `MapView` に重ねるために `offset(y: -130)` と `padding(.bottom, -130)` 等を確認し、ケースにより `50` 程度の調整でバランスを取るなど、重なりとスペーシングの検証を実施。
+- マップ領域の整理: 計算プロパティ `mapArea`（`ZStack` で `MapView` と `Button` を重ねる）を `private` で切り出し、外部公開しない設計意図を明示。ボタンは `location` から `MKMapItem` を組み立てて地図を開く流れを確認。
+- プラットフォーム差の対応: iOS と macOS で必要なレイアウトが異なるため、無理な共通化は行わず、各プラットフォームに合わせて実装。
+- 余分な制約の削減: 不要な `maxWidth` 指定を外すことで中央寄せの崩れを解消。必要に応じて `ScrollView`／`VStack` の有無を見直し、構造を簡素化。
+- 最終構成の把握: サマリーエリア（`Image` とヘッダー）→ `Divider` → ディスクリプション → マップエリア（`MapView` とボタンを重ねた `ZStack`）の流れを確認し、コードから構造が読み取りやすい形に整理。

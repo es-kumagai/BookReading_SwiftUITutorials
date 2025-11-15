@@ -1,0 +1,14 @@
+■ ダイジェスト
+
+この動画では、SwiftUI Tutorials の Section 3「Track the page」を読み進め、ステップ 1〜4（途中）まで取り組みました。SwiftUI と UIKit を連携し、`PageView` のステートでページ位置を管理しつつ、`UIPageViewController`／カスタム `UIPageControl` と結び付ける実装を学習しています。扱った主な技術的トピックは次のとおりです。
+- `PageView` に `@State` な `currentPage`（`Binding＜Int＞`）を追加し、その `Binding` を `PageViewController` に渡す設計。`updateUIViewController` でカレントページを反映する更新フロー。
+- `UIPageViewController` の `setViewControllers` は配列受け取りである点と、単一コントローラでも 1 要素配列で渡す必要があること。
+- カレントページが範囲外になった場合の扱い検討（`nil`、`guard`、`fatalError`、`precondition`）と、検証を `Coordinator` 側で行う方針。
+- `UIHostingController＜Page＞` への安全なダウンキャスト（`as?` と `guard`）で、インデックス範囲外とキャスト失敗を明確に分岐。
+- `UIPageViewController`／`Coordinator` への拡張で、ページ番号からコントローラを取得する補助メソッドやプロパティ（`currentPageController` など）を整備。
+- ページ番号と配列インデックス取り違え防止のため、`struct PageNumber` を導入。`Sendable`／`Hashable`／`ExpressibleByIntegerLiteral`／`AdditiveArithmetic` への準拠、`next`／`previous`／`offset`、および相互変換 `index(from:)`／`page(from:)` を実装。
+- ページ範囲 `pageNumberRange` と、`index(from pageNumber:)`／`pageNumber(from index:)` の設計を `Coordinator` に集約。
+- `pages` が空配列のケースをエラーとする前提条件（`precondition(!pages.isEmpty, "ページは 1 つ以上必要です")`）。
+- 遷移ログでページ移動を確認しつつ、`PageView` に `NEXT` ボタンを追加し、`mutating func moveNext()` でページ番号を更新する操作を実装。
+
+試行の結果、`@State` の `currentPageNumber` は更新される一方、`updateUIViewController` 内で `Coordinator` 側の `parent.currentPageNumber` への反映が確認できず値の不一致が発生。暫定対応は行わず ToDo として次回に持ち越しました。今回は、1 始まりのページ番号モデル化、インデックス変換の安全化、空ページ禁止などの前提条件整備まで進めています。

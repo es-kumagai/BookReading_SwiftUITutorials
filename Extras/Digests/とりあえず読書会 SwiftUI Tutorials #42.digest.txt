@@ -1,0 +1,13 @@
+■ ダイジェスト
+
+技術書を読み進めながら手を動かす録画です。今回は Swift マクロで `UNNotificationContent.userInfo` のアクセスを楽にするための仕込みを進めました。技術解説ではなく、読み進めながらの試行錯誤です。以下は本動画で具体的に着目して扱った内容です（言及のみの話題は含めていません）。
+
+- ビルド不調の原因切り分けと最小再現: Swift Macro テンプレートで新規プロジェクトを作成し、`SwiftSyntax` と `LandmarksMacros` の構成を確認。前回の問題は `import` の取り違えであることを再確認し、最小構成でビルドが通ることを確認。
+- 目標の整理: `UNNotificationContent` に対し、`userInfo` を `enum` 定義から安全に取り出す補助コードをマクロで生成する方針。生成したいのは `private var` としての `[String: Any]?` アクセサや、`userInfo` のキーに基づくサブスクリプト利用。
+- マクロ種別の見直し: `ExtensionMacro` ではなく、型へメンバーを追加する `MemberMacro` が適切と判断。`expansion` のシグネチャ（`providingMembersOf`／`attachedTo`）を確認し、まずは空配列を返す形で土台を用意。
+- 構文木の取得と走査: Swift AST Explorer でコードの構造を確認し、`MemberBlock` → `MemberBlockItemList` → `EnumDeclSyntax` をたどる方針を決定。`SyntaxVisitor`（`viewMode: .fixedUp`）で `DeclSyntax` を巡回し、目的の `enum`（名前が `UserInfo`）を `enumDecl.name.text == "UserInfo"` で特定。
+- キー名の整形: `enum` 名やケース名からプロパティ名を作るため、`String` 拡張で先頭のみを小文字化する `lowerCamelCase` を実装。`Character`／`Unicode.Scalar`／`asciiValue` の扱い、`StringProtocol` の添え字が `get` 専用であるためインプレース変更ができない点に配慮し、`dropFirst()` と連結で新しい文字列を組み立てる実装に。
+- 生成コードの組み立て: ビジターで集めた情報から `private var ＜property＞: [String: Any]?` などの `DeclSyntax`／`TokenSyntax` を生成。`userInfo` からの取り出しはキャストと `??`、`map` 等でオプショナルを安全に処理。必要に応じて「必須」とみなす項目は非オプショナル化する判断も検討。
+- 開発ツールまわり: Xcode の `Expand Macro` で展開を確認しつつ、表示されない／プラグイン受信エラーなどの挙動に遭遇。`ExprSyntax` に対する `formatted()` が使えずインデントが崩れるため、当面は文字列ベースの生成で対応。
+
+次回は、`enum` の各ケースに対応するプロパティ生成を広げ、`userInfo` 階層（例: `aps.alert.title` など）をマクロで網羅していく予定です。

@@ -1,0 +1,19 @@
+■ ダイジェスト
+
+技術書を読み進めながら、SwiftUI 2.0 リファレンスのサンプルコードを `Swift Macros` でリファクタリングする様子を記録した回です。主題は、マクロ展開で `aps.alert.title`／`aps.alert.message`／`aps.test.test` は出るのに `userInfo` ルートの `landmarkID`（キー名 `landmark_id`）が反映されない問題を、`SwiftSyntax` の `SyntaxVisitor` で抽出処理を組み直して解消することです。
+
+具体的に着目した事柄
+- AST 走査の見直し: `EnumDeclSyntax`／`EnumCaseDeclSyntax` を対象に、`visit` の戻り値を `.skipChildren` にする方針と `walk(node)` の適用範囲を修正し、ケース収集の階層ズレを防止
+- ビジターの再設計: `EnumMemberBlockVisitor` を導入し、親の `enum` 名を `ownerEnumName` から `namespace` として扱う設計に整理。`enum` を見つけたら再帰的に自分自身で `walk` してケースを収集
+- 名前と辞書の規約: `targetDictionaryName`／`dictionaryName`／`propertyName` を定義し、`namespace` の有無で `lowerCamelCase` 化の有無を切り替え。`enum` ケース名は基本そのまま、ルート時のみ `lowerCamelCase` を適用
+- 生成物の構築: マクロの `Expansion` を `DeclSyntax` の配列として管理し、`append` の呼び出しや結合ロジックを整理。`RangeReplaceableCollection` を使った `append` 周りの型制約や `as` の誤用を修正
+- アクセスレベルの挿入: 生成コードに任意のアクセスレベルを差し込めるよう `protection: String?` を導入し、指定時は `"private "` のように整形して出力
+- ビルドと展開の確認: `ImportMacro`／`Expansion` の流れを点検し、`visit` の対象を `MemberBlock` に切り替えることで展開不備を解消。最終的に `aps.alert.title`／`aps.alert.message`／`aps.test.test` に加え `landmark_id` も展開されることを確認
+- 付随対応: `enum`（例: `Category`、`Profile.Season`）に `Identifiable` 準拠を追加し、`typealias ID = Self`／`var id: Self { self }` でエラーを解消
+
+言及のみ（深掘りはしていません）
+- `watchOS` ターゲットでのビルド挙動
+- `Xcode`／マクロの `print` ログ出力先
+- `REST API` におけるキー命名との整合
+
+本動画は技術解説というより、リファレンスを読みつつ `SyntaxVisitor` の設計や命名規約・アクセスレベルの扱いを試行錯誤し、`userInfo` の `landmark_id` を含む展開を成立させるまでの過程を共有する内容です。

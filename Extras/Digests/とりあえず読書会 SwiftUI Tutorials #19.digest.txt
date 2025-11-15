@@ -1,0 +1,10 @@
+■ ダイジェスト
+
+SwiftUI のチュートリアルを読み進めながら、プロフィール編集画面の状態管理とデータ反映の設計を検討・実装していく回です。`EditButton`／`EditMode` に頼る方法と、自前のフラグやバインディングで制御する方法を行き来しつつ、編集開始／確定／キャンセルの挙動をコードでどう表現するかを手を動かして確認しました。特に次の点に着目しています。
+- 編集状態の制御: `@Environment(\.editMode)` と `EditButton` による制御と、`@State var isEditing`＋通常の `Button` による制御を比較。`Button("Submit", role: .confirm)` の `role` の見た目・意味付け（iOS 16 以降）を確認し、`HStack`／`Spacer` 配置の見直しで UI を整理。
+- ドラフトの扱い: 編集用の一時データを `editingProfile` から `pendingProfile`（`Optional`）へと整理し、「編集中がある／ない」を型で表現。`Cancel` で `pendingProfile = nil`、`Done`／`Submit` で現在の `Profile` に書き戻す流れを検証。同期のタイミングは `onAppear`／`onDisappear`／`onChange(of:)` を試し、表示切替時に適用する案も比較。
+- データバインディング: エディタには `@Binding` を渡し、必要に応じて `Binding(get:set:)` を自作して書き込み先や反映順序を調整。向き違いで意図しない書き戻しが起きる点をログで確認し、適用順を修正。
+- `EditMode` の扱い: `EditMode` の `.inactive`／`.active`／`.transient` を確認し、`editMode?.wrappedValue?.isEditing ?? false` 相当で導出した `isEditing` のゲッター／セッター経由で `.inactive` を入れて終了させる制御方法を検討。
+- API 更新への対応: 日付表示の非推奨警告に対し、`Text("\(profile.oldDate, style: .date)")` のように文字列補間へ修正してビルドを通す。
+
+本動画は仕様の最適解を断定する技術解説ではなく、チュートリアルを読み進めながら実際にコードを試し、`EditMode` 依存の分岐を減らして `isEditing` と `pendingProfile` で明快に表現する方針や、反映タイミングの選択肢を比較検討していく学習の過程を記録しています。
